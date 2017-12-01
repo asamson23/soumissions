@@ -1,0 +1,7 @@
+body {
+    user-select: none;
+    cursor: default;
+}
+.browser-logo {
+    width: 128px;
+}
