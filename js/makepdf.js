@@ -92,6 +92,19 @@ var data = {
         city: 'Drummondville, QC',
         postcode: 'J2C 6A2',
         phone: '(819) 478-4671'
+    },
+    items: {
+        header: ['Qté', 'No d\'UGS', 'Description', 'Prix Unitaire', 'Prix Total'],
+        rows: [
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $']
+        ]
     }
 }
 
@@ -156,6 +169,59 @@ var createPDF = function () {
     doc.setTextColor(0);
     lineHeight = 1.15;
     
+    // Items
+    doc.autoTable(data.items.header, data.items.rows, {
+        startY: y,
+        tableLineColor: [189, 195, 199],
+        tableLineWidth: 0.75,
+        styles: {
+            textColor: 0,
+            cellPadding: {top: 2.5, bottom: 2.5}
+        },
+        headerStyles: {
+            fillColor: [0, 0, 0],
+            fontStyle: 'bold',
+            textColor: 255
+        },
+        columnStyles: {
+            0: {
+                halign: 'center',
+                columnWidth: 40
+            },
+            1: {
+                halign: 'left',
+                columnWidth: 65
+            },
+            2: {
+                halign: 'center',
+                columnWidth: 'auto'
+            },
+            3: {
+                halign: 'right',
+                columnWidth: 80
+            },
+            4: {
+                halign: 'right',
+                columnWidth: 85
+            }
+        },
+        drawCell: function(cell, data) {
+            if (data.row.index > 0) {
+                doc.setDrawColor(189, 195, 199);
+                doc.setLineWidth(1.5);
+                doc.line(cell.x, cell.y, cell.x + cell.width - 0.75, cell.y);
+            }
+            if (data.column.index > 0) {
+                doc.setDrawColor(0);
+                doc.setLineWidth(1.5);
+                doc.line(cell.x, cell.y, cell.x, cell.y + cell.height);
+            }
+        },
+        alternateRowStyles: {
+            fillColor: [221, 233, 247]
+        }
+    });
+
     // Page 2 - Modalités
     doc.addPage();
     y = margin;

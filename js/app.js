@@ -10,7 +10,7 @@ var SettingsData = {
     storecity: '',
     storepostcode: '',
     storephone: '',
-    bdcoup: '45678',
+    bdcoup: '53431',
     loaded: false,
     loadSettings: function () {
         var settings = localStorage.getItem('settings');
@@ -201,7 +201,7 @@ ImportQuote.view = function () {
         m('section.section', [
             m('.container', [
                 m('button.button.is-info', {onclick: function () {
-                    window.open('/pdfview.html#' + createPDF());
+                    window.open('pdfview.html#' + createPDF());
                 }}, 'Test PDF')
             ])
         ])
