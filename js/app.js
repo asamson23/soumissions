@@ -256,6 +256,67 @@ var InputField = {
     }
 }
 
+var SelectField = {
+    oninit: function (vnode) {
+        var params = vnode.attrs;
+        var self = this;
+        self.validate = function () {
+            var isValid = true;
+            if (typeof params.onValidate === 'function') {
+                isValid = params.onValidate(params.fieldSet[params.name].value);
+            }
+            params.fieldSet[params.name].valid = isValid;
+            return isValid;
+        }
+        self.onChange = function (e) {
+            params.fieldSet[params.name].value = e.target.value;
+            if (typeof params.onChange === 'function') {
+                params.onChange(e);
+            };
+        }
+        self.onExit = function () {
+            self.validate();
+        }
+        if (!params.fieldSet[params.name]) {
+            params.fieldSet[params.name] = {
+                value: params.defaultValue,
+                valid: null,
+                validate: self.validate
+            }
+        }
+    },
+    view: function (vnode) {
+        var params = vnode.attrs;
+        var self = this;
+
+        return m('div.field', [
+            m('label.label' + (params.small ? '.is-small' : ''), params.label),
+            m('div.control' + (params.icon ? '.has-icons-right' : ''), [
+                m('div.select'  + (params.small ? '.is-small' : '') + (params.fullwidth ? '.is-fullwidth' : '') + (params.fieldSet[params.name].valid === true ? '.is-success' : params.fieldSet[params.name].valid === false ? '.is-danger' : ''), [
+                    m('select', {
+                        oncreate: function (vdom) {
+                            if (params.autofocus) {
+                                vdom.dom.focus();
+                            }
+                        },
+                        id: params.name,
+                        name: params.name,
+                        onchange: self.onChange,
+                        onblur: self.onExit,
+                        disabled: params.disabled || false
+                    }, params.options.map(function (o) {
+                        return m('option', {value: o.value, selected: (params.fieldSet[params.name].value == o.value)}, o.label);
+                    }))
+                ]),
+                params.icon ? m('span.icon.is-small.is-right', m('i', {className: params.icon})) : ''
+            ]),
+            (params.fieldSet[params.name].valid === true && params.successText) ? m('p.help.is-success', params.successText) :
+            (params.fieldSet[params.name].valid === false && params.errorText) ? m('p.help.is-danger', params.errorText) : 
+            (params.helpText) ? m('p.help', params.helpText) : ''
+        ])
+    }
+}
+
 var QuoteList = {}
 
 QuoteList.view = function () {
@@ -275,7 +336,6 @@ NewQuote.oninit = function () {
     var self = this;
     self.fieldSet = {};
     self.quote = QuoteData.newQuote();
-
 }
 
 NewQuote.view = function () {
@@ -314,7 +374,7 @@ NewQuote.view = function () {
                             fieldSet: self.fieldSet,
                             defaultValue: '',
                             regEx: /^\d{7}$/,
-                            errorText: 'Entrez votre numéro d\'associé. (ex.: 1234567 ou 0004567)',
+                            helpText: 'Entrez votre numéro d\'associé. (ex.: 1234567 ou 0004567)',
                             errorText: 'Entrez un numéro d\'associé valide. (ex.: 1234567 ou 0004567)',
                             autofocus: true
                         }),
@@ -388,7 +448,7 @@ NewQuote.view = function () {
                                     label: 'Adresse courriel du client',
                                     fieldSet: self.fieldSet,
                                     defaultValue: '',
-                                    regEx: /^[(]?(\d{3})[)]?\s?-?\s?(\d{3})\s?-?\s?(\d{4})$/,
+                                    regEx: /^([A-Z|a-z|0-9](\.|_){0,1})+[A-Z|a-z|0-9]\@([A-Z|a-z|0-9])+((\.){0,1}[A-Z|a-z|0-9]){2}\.[a-z]{2,3}$/,
                                     helpText: 'Entrez l\'adresse courriel de votre client.',
                                     errorText: 'Entrez une adresse courriel valide. (ex.: nom@entreprise.com)'
                                 })
@@ -440,24 +500,26 @@ NewQuote.view = function () {
                                 })
                             ]),
                             m('.column', [
-                                m('div.field', [
-                                    m('label.label', 'Province du client'),
-                                    m('div.control', m('div.select.is-fullwidth', {onchange: function (e) {
-                                        self.ecoSetting = e.target.value;
-                                    }}, m('select', [
-                                        m('option', {value: 'QC'}, 'Québec'),
-                                        m('option', {value: 'ON'}, 'Ontario'),
-                                        m('option', {value: 'NB'}, 'Nouveau-Brunswick'),
-                                        m('option', {value: 'NS'}, 'Nouvelle-Écosse'),
-                                        m('option', {value: 'NL'}, 'Terre-Neuve et Labrador'),
-                                        m('option', {value: 'PEI'}, 'Ile du Prince-Édouard'),
-                                        m('option', {value: 'MB'}, 'Manitoba'),
-                                        m('option', {value: 'SK'}, 'Saskatchewan'),
-                                        m('option', {value: 'AB'}, 'Alberta'),
-                                        m('option', {value: 'BC'}, 'Colombie-Britannique')
-                                    ]))),
-                                    m('p.help', "Choisissez la province de votre client.")
-                                ])
+                                m(SelectField, {
+                                    name: 'custprovince',
+                                    label: 'Province du client',
+                                    fieldSet: self.fieldSet, 
+                                    defaultValue: 'QC',
+                                    helpText: 'Choisissez la province de votre client.',
+                                    fullwidth: true,
+                                    options: [
+                                        {value: 'QC', label: 'Québec'},
+                                        {value: 'ON', label: 'Ontario'},
+                                        {value: 'NB', label: 'Nouveau-Brunswick'},
+                                        {value: 'NS', label: 'Nouvelle-Écosse'},
+                                        {value: 'NL', label: 'Terre-Neuve et Labrador'},
+                                        {value: 'PEI', label: 'Ile du Prince-Édouard'},
+                                        {value: 'MB', label: 'Manitoba'},
+                                        {value: 'SK', label: 'Saskatchewan'},
+                                        {value: 'AB', label: 'Alberta'},
+                                        {value: 'BC', label: 'Colombie-Britannique'}
+                                    ]
+                                })
                             ])
                         ]),
                         m(InputField, {
@@ -513,7 +575,7 @@ Settings.oninit = function () {
             SettingsData.storecity = self.fieldSet['storecity'].value;
             SettingsData.storepostcode = self.fieldSet['storepostcode'].value;
             SettingsData.storephone = self.fieldSet['storephone'].value;
-            SettingsData.ecosetting = self.ecoSetting;
+            SettingsData.ecosetting = self.fieldSet['ecosetting'].value;
             SettingsData.saveSettings();
             SettingsData.loaded = true;
             m.route.set('/');
@@ -604,16 +666,18 @@ Settings.view = function () {
                             regEx: /^\d{5}$/,
                             errorText: 'Entrez un code de bon valide (ex.: 12345).'
                         }),
-                        m('div.field', [
-                            m('label.label', 'Options d\'affichage des écofrais'),
-                            m('div.control', m('div.select', {onchange: function (e) {
-                                self.ecoSetting = e.target.value;
-                            }}, m('select', [
-                                m('option', {value: EcoSetting.INCLUDE, selected: self.ecoSetting == EcoSetting.INCLUDE}, 'Inclure les écofrais dans le prix de l\'item'),
-                                m('option', {value: EcoSetting.INSERT, selected: self.ecoSetting == EcoSetting.INSERT}, 'Ajouter les écofrais sur leur propre ligne de soumission')
-                            ]))),
-                            m('p.help', "Vous pouvez afficher les écofrais dans votre soumission de deux façons: si vous choisissez d'inclure les écofrais dans le prix de l'item, un astérisque sera placé à côté du prix avec une note indiquant que les écofrais ont été incorporés. Si vous désirez avoir les écofrais sur leur propre ligne à la place, ils seront placés directement sous l'item. Notez par contre qu'une soumission ne peut avoir qu'un maximum de 18 lignes: une soumission d'articles technologiques risque de se remplir rapidement!")
-                        ])
+                        m(SelectField, {
+                            name: 'ecosetting',
+                            label: 'Options d\'affichage des écofrais',
+                            fieldSet: self.fieldSet, 
+                            defaultValue: SettingsData.ecosetting,
+                            helpText: "Vous pouvez afficher les écofrais dans votre soumission de deux façons: si vous choisissez d'inclure les écofrais dans le prix de l'item, un astérisque sera placé à côté du prix avec une note indiquant que les écofrais ont été incorporés. Si vous désirez avoir les écofrais sur leur propre ligne à la place, ils seront placés directement sous l'item. Notez par contre qu'une soumission ne peut avoir qu'un maximum de 18 lignes: une soumission d'articles technologiques risque de se remplir rapidement!",
+                            fullwidth: true,
+                            options: [
+                                {value: EcoSetting.INCLUDE, label: 'Inclure les écofrais dans le prix de l\'item'},
+                                {value: EcoSetting.INSERT, label: 'Ajouter les écofrais sur leur propre ligne de soumission'}
+                            ]
+                        })
                     ])
                 ]),
                 m('.field.is-grouped.notification', [
