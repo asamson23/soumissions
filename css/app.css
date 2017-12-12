@@ -2,6 +2,11 @@ body {
     user-select: none;
     cursor: default;
 }
+
 .browser-logo {
     width: 128px;
+}
+
+.section.is-small {
+    padding: 1.5rem;
 }

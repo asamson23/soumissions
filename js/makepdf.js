@@ -1,5 +1,8 @@
 var jsPDF = window.jsPDF;
 
+// MAX COMMENT LENGTH = 700
+// MIN-MAX NUMBER OF ITEMS = 18
+
 // Inspired by autoTableText
 jsPDF.API.textEx = function (text, x, y, styles) {
     if (typeof x !== 'number' || typeof y !== 'number') {
@@ -96,6 +99,9 @@ var data = {
     items: {
         header: ['Qté', 'No d\'UGS', 'Description', 'Prix Unitaire', 'Prix Total'],
         rows: [
+            [1, '19117388', '*iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', '*iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', '*iPad Mini 4', '529.00 $', '529.00 $'],
             [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
             [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
             [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
@@ -103,9 +109,21 @@ var data = {
             [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
             [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
             [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $']
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
+            ['', '', '*Les montants indiqués incluent les écofrais.', 'Total partiel', '566.08 $'],
+            ['', '', '', 'TPS', '28.30 $'],
+            ['', '', '', 'TVQ', '56.47 $'],
+            ['', '', 'Ceci n\'est pas une facture', 'Total', '650.86 $']
         ]
-    }
+    },
+    comments: ""
 }
 
 var createPDF = function () {
@@ -120,6 +138,7 @@ var createPDF = function () {
     // Page 1 - Soumission
 
     // Heading
+    var innerWidth = pageWidth - margin * 2;
     var y = margin;
     doc.addImage(logo.src, 'PNG', margin, y, logo.w, logo.h);
     fontSize = 20;
@@ -172,8 +191,6 @@ var createPDF = function () {
     // Items
     doc.autoTable(data.items.header, data.items.rows, {
         startY: y,
-        tableLineColor: [189, 195, 199],
-        tableLineWidth: 0.75,
         styles: {
             textColor: 0,
             cellPadding: {top: 2.5, bottom: 2.5}
@@ -206,22 +223,95 @@ var createPDF = function () {
             }
         },
         drawCell: function(cell, data) {
-            if (data.row.index > 0) {
-                doc.setDrawColor(189, 195, 199);
-                doc.setLineWidth(1.5);
-                doc.line(cell.x, cell.y, cell.x + cell.width - 0.75, cell.y);
-            }
-            if (data.column.index > 0) {
-                doc.setDrawColor(0);
-                doc.setLineWidth(1.5);
-                doc.line(cell.x, cell.y, cell.x, cell.y + cell.height);
+            if ((data.row.index >= data.table.rows.length - 4) && (data.column.index < 4)) {
+                if (data.row.index == data.table.rows.length - 4) {
+                    doc.setDrawColor(189, 195, 199);
+                    doc.setLineWidth(0.75);
+                    doc.line(cell.x, cell.y - 0.5, cell.x + cell.width - 0.75, cell.y - 0.5);
+                }
+                if (data.column.index == 3) {
+                    if (data.row.index == data.table.rows.length - 1) doc.setFontStyle('bold');
+                    doc.autoTableText(cell.text, cell.x + cell.width - 5, cell.y + cell.height / 2, {
+                        halign: 'right',
+                        valign: 'middle'
+                    });
+                } else if (data.column.index == 2) {
+                    if (data.row.index == data.table.rows.length - 1) doc.setFontStyle('bold');
+                    doc.autoTableText(cell.text, cell.x + cell.width / 2, cell.y + cell.height / 2, {
+                        halign: 'center',
+                        valign: 'middle'
+                    });
+                }
+                return false;
+            } else {
+                if (data.row.index > 0) {
+                    if (data.row.index == data.table.rows.length - 1) {
+                        doc.setFontStyle('bold');
+                        doc.setDrawColor(0);
+                        doc.setLineWidth(1.5);
+                        doc.line(cell.x, cell.y, cell.x + cell.width - 0.75, cell.y);
+                        doc.line(cell.x, cell.y + cell.height, cell.x + cell.width, cell.y + cell.height);
+                        doc.setLineWidth(0.75);
+                        doc.line(cell.x, cell.y + cell.height + 2, cell.x + cell.width, cell.y + cell.height + 2);
+                    } else {
+                        doc.setDrawColor(189, 195, 199);
+                        doc.setLineWidth(1.5);
+                        doc.line(cell.x, cell.y, cell.x + cell.width - 0.75, cell.y);
+                    }
+                }
+                if (data.column.index > 0) {
+                    if (data.row.index >= data.table.rows.length - 4) {
+                        doc.setDrawColor(189, 195, 199);
+                    } else {
+                        doc.setDrawColor(0);
+                    }
+                    doc.setLineWidth(1.5);
+                    doc.line(cell.x, cell.y, cell.x, cell.y + cell.height);
+                }
             }
         },
         alternateRowStyles: {
-            fillColor: [221, 233, 247]
+            fillColor: [217, 238, 255]
         }
     });
-
+    y = doc.autoTable.previous.finalY + fontSize * lineHeight;
+    doc.textEx('Commentaires :', margin, y);
+    y += fontSize * lineHeight;
+    var oldY = y;
+    y += 2.5;
+    fontSize = 8;
+    doc.setFontSize(fontSize);
+    var splitText = doc.splitTextToSize(data.comments, pageWidth - margin * 2 - 5);
+    doc.textEx(splitText, margin + 2.5, y);
+    y += (splitText.length + Math.max(0, 5 - splitText.length)) * fontSize * lineHeight;
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.75);
+    doc.rect(margin, oldY, pageWidth - margin*2, y - oldY + 2.5);
+    fontSize = 11;
+    doc.setFontSize(fontSize);
+    y += fontSize * lineHeight * 2 + 2.5;
+    doc.line(margin, y, margin + innerWidth * 0.4 - 7.5, y);
+    doc.line(pageWidth / 2 - innerWidth * 0.1, y, pageWidth / 2 + innerWidth * 0.1, y);
+    doc.line(pageWidth - margin - innerWidth * 0.4 + 7.5, y, pageWidth - margin, y);
+    y += 2.5;
+    fontSize = 8;
+    doc.setFontSize(fontSize);
+    doc.textEx('Client (signature)', (innerWidth * 0.4 - 7.5) / 2 + margin, y, {halign: 'center'});
+    doc.textEx('Date', pageWidth / 2 , y, {halign: 'center'});
+    doc.textEx('Devis préparé par (signature)', pageWidth - (innerWidth * 0.4 + 7.5) / 2 - margin, y, {halign: 'center'});
+    y += fontSize * lineHeight + 2.5;
+    doc.textEx('Pour accepter ce devis ainsi que ses modalités, veuillez signer et renvoyer ce devis avant la date d’expiration indiquée.', margin, y);
+    y += fontSize * lineHeight * 2;
+    doc.setFontStyle('bolditalic');
+    doc.textEx('Nous apprécions l’occasion de vous fournir un devis en fonction de vos besoins. Pour finaliser le devis,', pageWidth / 2, y, {halign: 'center'});
+    y += fontSize * lineHeight;
+    doc.textEx('apportez simplement ce formulaire de devis signé dans le magasin et parlez avec un associé ou un directeur.', pageWidth / 2, y, {halign: 'center'});
+    y += fontSize * lineHeight * 1.5;
+    fontSize = 11;
+    doc.setFontSize(fontSize);
+    doc.setFontStyle('italic');
+    doc.textEx('Les modalités sont indiquées au verso.', pageWidth / 2, y, {halign: 'center'});
+    
     // Page 2 - Modalités
     doc.addPage();
     y = margin;

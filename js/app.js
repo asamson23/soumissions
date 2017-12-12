@@ -1,7 +1,16 @@
 var m = window.m;
 var _ = window._;
+var titleCase = window.titleCase;
 var createPDF = window.createPDF;
 
+var zFill = function(s) {
+    return ('0' + s).slice(-2);
+}
+
+var EcoSetting = {
+    INCLUDE: 'INCLUDE',
+    INSERT: 'INSERT'
+}
 var SettingsData = {
     tvq: 9.9975,
     tps: 5.0,
@@ -12,6 +21,7 @@ var SettingsData = {
     storephone: '',
     bdcoup: '53431',
     loaded: false,
+    ecosetting: EcoSetting.INCLUDE,
     loadSettings: function () {
         var settings = localStorage.getItem('settings');
         if (settings) {
@@ -24,6 +34,7 @@ var SettingsData = {
             this.storeaddr = settings.storeaddr;
             this.storephone = settings.storephone;
             this.storepostcode = settings.storepostcode;
+            this.ecosetting = settings.ecosetting;
             return true;
         } else {
             return false;
@@ -38,7 +49,8 @@ var SettingsData = {
             storecity: this.storecity,
             storeaddr: this.storeaddr,
             storephone: this.storephone,
-            storepostcode: this.storepostcode
+            storepostcode: this.storepostcode,
+            ecosetting: this.ecosetting
         }
         settings = JSON.stringify(settings);
         localStorage.setItem('settings', settings);
@@ -46,6 +58,13 @@ var SettingsData = {
     }
 }
 SettingsData.loaded = SettingsData.loadSettings();
+
+var QuoteStatus = {
+    NEW: 'NEW',
+    ACTIVE: 'ACTIVE',
+    EXPIRED: 'EXPIRED',
+    INACTIVE: 'INACTIVE'
+}
 
 var QuoteData = {
     allquotes: {},
@@ -76,10 +95,67 @@ var QuoteData = {
         }
     },
     saveQuote: function () {
-        if (!this.openquote.ID) return false;
+        if (!this.openquote.id) return false;
         var quote = JSON.stringify(this.openquote);
-        localStorage.setItem(this.openquote.ID, quote);
+        localStorage.setItem(this.openquote.id, quote);
         return true;
+    },
+    nextQuoteId: function () {
+        var store = SettingsData.storeno,
+            date = new Date(),
+            datestr = String(date.getFullYear()).slice(2, 4) + zFill(String(date.getMonth() + 1)) + zFill(String(date.getDate())),
+            seq = 1,
+            id = store + datestr + zFill(seq);
+        while (id in this.allquotes) {
+            seq++;
+            id = store + datestr + zFill(seq);
+        }
+        return id;
+    },
+    newQuote: function () {
+        var date = new Date();
+        var expdate = new Date(date.getFullYear(), date.getMonth() + 1, date.getDate());
+        this.openquote = {
+            id: this.nextQuoteId(),
+            date: date,
+            expires: expdate,
+            associate: {
+                number: '',
+                name: ''
+            },
+            store: {
+                no: SettingsData.storeno,
+                addr: SettingsData.storeaddr,
+                city: SettingsData.storecity + ', QC',
+                postcode: SettingsData.storepostcode,
+                phone: SettingsData.storephone
+            },
+            customer: {
+                name: '',
+                company: '',
+                addr: '',
+                city: '',
+                province: '',
+                postcode: '',
+                phone: '',
+                email: ''
+            },
+            items: {
+                header: ['Qté', 'No d\'UGS', 'Description', 'Prix Unitaire', 'Prix Total'],
+                rows: []
+            },
+            comments: '',
+            notes: '',
+            status: QuoteStatus.NEW
+        }
+        return this.openquote;
+    },
+    dateToStr: function (d) {
+        return zFill(String(d.getDate())) + '/' + zFill(String(d.getMonth() + 1)) + '/' + String(d.getFullYear());
+    },
+    strToDate: function (s) {
+        s = s.split('/');
+        return new Date(Number(s[2]), Number(s[1]) - 1, Number(s[0]));
     }
 }
 QuoteData.loadQuotes();
@@ -116,15 +192,27 @@ var InputField = {
         var params = vnode.attrs;
         var self = this;
         self.validate = function () {
-            params.fieldSet[params.name].valid = params.regEx.test(params.fieldSet[params.name].value);
-            return params.fieldSet[params.name].valid;
+            var isValid = params.regEx.test(params.fieldSet[params.name].value);
+            if (isValid) {
+                if (typeof params.filter === 'function') {
+                    var filtered = params.filter(params.fieldSet[params.name].value, params.regEx);
+                    if (filtered === false) {
+                        isValid = false;
+                    } else {
+                        params.fieldSet[params.name].value = filtered;
+                    }
+                } else if (typeof params.filter === 'string') {
+                    params.fieldSet[params.name].value = params.fieldSet[params.name].value.replace(params.regEx, params.filter);
+                };
+            };
+            params.fieldSet[params.name].valid = isValid;
+            return isValid;
         }
         self.onChange = function (e) {
             params.fieldSet[params.name].value = e.target.value;
-            self.validate();
             if (typeof params.onChange === 'function') {
                 params.onChange(e);
-            }
+            };
         }
         self.onExit = function () {
             self.validate();
@@ -142,9 +230,9 @@ var InputField = {
         var self = this;
 
         return m('div.field', [
-            m('label.label', params.label),
+            m('label.label' + (params.small ? '.is-small' : ''), params.label),
             m('div.control' + (params.icon ? '.has-icons-right' : ''), [
-                m('input.input' + (params.fieldSet[params.name].valid === true ? '.is-success' : params.fieldSet[params.name].valid === false ? '.is-danger' : ''), {
+                m('input.input'  + (params.small ? '.is-small' : '') + (params.fieldSet[params.name].valid === true ? '.is-success' : params.fieldSet[params.name].valid === false ? '.is-danger' : ''), {
                     oncreate: function (vdom) {
                         if (params.autofocus) {
                             vdom.dom.focus();
@@ -162,7 +250,8 @@ var InputField = {
                 params.icon ? m('span.icon.is-small.is-right', m('i', {className: params.icon})) : ''
             ]),
             (params.fieldSet[params.name].valid === true && params.successText) ? m('p.help.is-success', params.successText) :
-            (params.fieldSet[params.name].valid === false && params.errorText) ? m('p.help.is-danger', params.errorText) : ''
+            (params.fieldSet[params.name].valid === false && params.errorText) ? m('p.help.is-danger', params.errorText) : 
+            (params.helpText) ? m('p.help', params.helpText) : ''
         ])
     }
 }
@@ -182,12 +271,209 @@ QuoteList.view = function () {
 
 var NewQuote = {}
 
+NewQuote.oninit = function () {
+    var self = this;
+    self.fieldSet = {};
+    self.quote = QuoteData.newQuote();
+
+}
+
 NewQuote.view = function () {
+    var self = this;
     return [
         QuoteHeader('newquote'),
         m('section.section', [
             m('.container', [
-
+                m('.columns', [
+                    m('.column', [
+                        m('h1.title', 'Créer une nouvelle soumission'),
+                        m('h2.subtitle', 'Veuillez remplir les champs de cette page. La soumission sera sauvegardée automatiquement.'),
+                    ]),
+                    m('.column.is-3.notification', [
+                        m('div.field', [
+                            m('label.label.is-small', 'Numéro du devis'),
+                            m('div.control', m('p.is-small', self.quote.id))
+                        ]),
+                        m('div.field', [
+                            m('label.label.is-small', 'Statut du devis'),
+                            m('div.control', self.quote.status == QuoteStatus.NEW ? m('p.is-small', 'NOUVEAU') : '')
+                        ]),
+                    ])
+                ])
+            ])
+        ]),
+        m('section.section.is-small', [
+            m('.container', [
+                m('h1.title.is-4', '1. Renseignements Généraux'),
+                m('h2.subtitle.is-6', 'D\'abord, quelques renseignements généraux sur la soumission.'),
+                m('.columns', [
+                    m('.column', [
+                        m(InputField, {
+                            name: 'assno',
+                            label: 'Votre numéro d\'associé',
+                            fieldSet: self.fieldSet,
+                            defaultValue: '',
+                            regEx: /^\d{7}$/,
+                            errorText: 'Entrez votre numéro d\'associé. (ex.: 1234567 ou 0004567)',
+                            errorText: 'Entrez un numéro d\'associé valide. (ex.: 1234567 ou 0004567)',
+                            autofocus: true
+                        }),
+                        m(InputField, {
+                            name: 'assname',
+                            label: 'Votre nom',
+                            fieldSet: self.fieldSet,
+                            defaultValue: '',
+                            regEx: /^.+$/,
+                            filter: titleCase.convert,
+                            helpText: 'Entrez votre nom complet (prénom et nom)',
+                            errorText: 'Entrez un nom valide.'
+                        })
+                    ]),
+                    m('.column', [
+                        m(InputField, {
+                            name: 'quotedate',
+                            label: 'Date de la soumission',
+                            fieldSet: self.fieldSet,
+                            defaultValue: QuoteData.dateToStr(self.quote.date),
+                            regEx: /^(0[1-9]|[12][0-9]|3[01])[- /.]?(0[1-9]|1[0-2])[- /.]?((?:19|20)\d\d)$/,
+                            filter: function (s, rEx) {
+                                self.quote.date = QuoteData.strToDate(s.replace(rEx, '$1/$2/$3'));
+                                return QuoteData.dateToStr(self.quote.date);
+                            },
+                            helpText: '(jj/mm/aaaa)',
+                            errorText: 'Entrez une date valide (jj/mm/aaaa).'
+                        }),
+                        m(InputField, {
+                            name: 'quoteexpires',
+                            label: 'Date d\'expiration',
+                            fieldSet: self.fieldSet,
+                            defaultValue: QuoteData.dateToStr(self.quote.expires),
+                            regEx: /^(0[1-9]|[12][0-9]|3[01])[- /.]?(0[1-9]|1[0-2])[- /.]?((?:19|20)\d\d)$/,
+                            filter: function (s, rEx) {
+                                self.quote.expires = QuoteData.strToDate(s.replace(rEx, '$1/$2/$3'));
+                                if (self.quote.expires < self.quote.date) {
+                                    return false;
+                                }
+                                return QuoteData.dateToStr(self.quote.expires);
+                            },
+                            helpText: '(jj/mm/aaaa)',
+                            errorText: 'Entrez une date valide (jj/mm/aaaa). La date doit être supérieure à la date de soumission.'
+                        })
+                    ])
+                ])
+            ])
+        ]),
+        m('section.section.is-small', [
+            m('.container', [
+                m('h1.title.is-4', '2. Renseignements sur votre client'),
+                m('h2.subtitle.is-6', 'Veuillez remplir tous les champs ci-dessous.'),
+                m('.columns', [
+                    m('.column', [
+                        m('.columns', [
+                            m('.column', [
+                                m(InputField, {
+                                    name: 'custphone',
+                                    label: 'Numéro de téléphone du client',
+                                    fieldSet: self.fieldSet,
+                                    defaultValue: '',
+                                    regEx: /^[(]?(\d{3})[)]?\s?-?\s?(\d{3})\s?-?\s?(\d{4})$/,
+                                    filter: '($1) $2-$3',
+                                    helpText: 'Entrez le numéro de téléphone de votre client.',
+                                    errorText: 'Entrez un numéro de téléphone valide. (ex.: (555) 555-2345)'
+                                })
+                            ]),
+                            m('.column', [
+                                m(InputField, {
+                                    name: 'custemail',
+                                    label: 'Adresse courriel du client',
+                                    fieldSet: self.fieldSet,
+                                    defaultValue: '',
+                                    regEx: /^[(]?(\d{3})[)]?\s?-?\s?(\d{3})\s?-?\s?(\d{4})$/,
+                                    helpText: 'Entrez l\'adresse courriel de votre client.',
+                                    errorText: 'Entrez une adresse courriel valide. (ex.: nom@entreprise.com)'
+                                })
+                            ]),
+                        ]),
+                        m(InputField, {
+                            name: 'custname',
+                            label: 'Nom de la personne-ressource',
+                            fieldSet: self.fieldSet,
+                            defaultValue: '',
+                            regEx: /^.+$/,
+                            filter: titleCase.convert,
+                            helpText: 'Entrez le nom complet (prénom et nom)',
+                            errorText: 'Entrez un nom valide.'
+                        }),
+                        m(InputField, {
+                            name: 'custbusiness',
+                            label: 'Nom de l\'entreprise',
+                            fieldSet: self.fieldSet,
+                            defaultValue: '',
+                            regEx: /^.+$/,
+                            filter: titleCase.convert,
+                            helpText: 'Entrez le nom de l\'entreprise.',
+                            errorText: 'Entrez un nom valide.'
+                        })
+                    ]),
+                    m('.column', [
+                        m(InputField, {
+                            name: 'custaddr',
+                            label: 'Adresse du client',
+                            fieldSet: self.fieldSet,
+                            defaultValue: '',
+                            regEx: /^\d+\s?.+$/,
+                            filter: titleCase.convert,
+                            helpText: 'Entrez l\'adresse de votre client.',
+                            errorText: 'Entrez une adresse valide.'
+                        }),
+                        m('.columns', [
+                            m('.column', [
+                                m(InputField, {
+                                    name: 'custcity',
+                                    label: 'Ville du client',
+                                    fieldSet: self.fieldSet,
+                                    defaultValue: '',
+                                    regEx: /^.+$/,
+                                    filter: titleCase.convert,
+                                    helpText: 'Entrez la ville de votre client.',
+                                    errorText: 'Entrez une ville valide.'
+                                })
+                            ]),
+                            m('.column', [
+                                m('div.field', [
+                                    m('label.label', 'Province du client'),
+                                    m('div.control', m('div.select.is-fullwidth', {onchange: function (e) {
+                                        self.ecoSetting = e.target.value;
+                                    }}, m('select', [
+                                        m('option', {value: 'QC'}, 'Québec'),
+                                        m('option', {value: 'ON'}, 'Ontario'),
+                                        m('option', {value: 'NB'}, 'Nouveau-Brunswick'),
+                                        m('option', {value: 'NS'}, 'Nouvelle-Écosse'),
+                                        m('option', {value: 'NL'}, 'Terre-Neuve et Labrador'),
+                                        m('option', {value: 'PEI'}, 'Ile du Prince-Édouard'),
+                                        m('option', {value: 'MB'}, 'Manitoba'),
+                                        m('option', {value: 'SK'}, 'Saskatchewan'),
+                                        m('option', {value: 'AB'}, 'Alberta'),
+                                        m('option', {value: 'BC'}, 'Colombie-Britannique')
+                                    ]))),
+                                    m('p.help', "Choisissez la province de votre client.")
+                                ])
+                            ])
+                        ]),
+                        m(InputField, {
+                            name: 'custpostcode',
+                            label: 'Code postal du client',
+                            fieldSet: self.fieldSet,
+                            defaultValue: '',
+                            regEx: /^([ABCEGHJ-NPRSTVXY]{1}\d{1}[A-Z]{1})\s?(\d{1}[A-Z]{1}\d{1})$/i,
+                            filter: function (s, rEx) {
+                                return s.replace(rEx, '$1 $2').toUpperCase();
+                            },
+                            helpText: 'Entrez le code postal de votre client (ex.: H0H 0H0).',
+                            errorText: 'Entrez un code postal valide (ex.: H0H 0H0).'
+                        }),
+                    ])
+                ])
             ])
         ])
     ];
@@ -213,7 +499,7 @@ var Settings = {}
 Settings.oninit = function () {
     var self = this;
     self.fieldSet = {};
-
+    self.ecoSetting = SettingsData.ecosetting;
     self.save = function () {
         var valid = Object.keys(self.fieldSet).every(function (k) {
             return self.fieldSet[k].validate();
@@ -227,6 +513,7 @@ Settings.oninit = function () {
             SettingsData.storecity = self.fieldSet['storecity'].value;
             SettingsData.storepostcode = self.fieldSet['storepostcode'].value;
             SettingsData.storephone = self.fieldSet['storephone'].value;
+            SettingsData.ecosetting = self.ecoSetting;
             SettingsData.saveSettings();
             SettingsData.loaded = true;
             m.route.set('/');
@@ -259,6 +546,7 @@ Settings.view = function () {
                             fieldSet: self.fieldSet,
                             defaultValue: SettingsData.storeaddr,
                             regEx: /^\d+\s?.+$/,
+                            filter: titleCase.convert,
                             errorText: 'Entrez l\'adresse du magasin.'
                         }),
                         m(InputField, {
@@ -267,6 +555,7 @@ Settings.view = function () {
                             fieldSet: self.fieldSet,
                             defaultValue: SettingsData.storecity,
                             regEx: /^.+$/,
+                            filter: titleCase.convert,
                             errorText: 'Entrez la ville du magasin.'
                         }),
                         m(InputField, {
@@ -274,7 +563,10 @@ Settings.view = function () {
                             label: 'Code postal du magasin',
                             fieldSet: self.fieldSet,
                             defaultValue: SettingsData.storepostcode,
-                            regEx: /^[ABCEGHJ-NPRSTVXY]{1}\d{1}[A-Z]{1}\s?\d{1}[A-Z]{1}\d{1}$/i,
+                            regEx: /^([ABCEGHJ-NPRSTVXY]{1}\d{1}[A-Z]{1})\s?(\d{1}[A-Z]{1}\d{1})$/i,
+                            filter: function (s, rEx) {
+                                return s.replace(rEx, '$1 $2').toUpperCase();
+                            },
                             errorText: 'Entrez un code postal valide (ex.: H0H 0H0).'
                         }),
                         m(InputField, {
@@ -282,7 +574,8 @@ Settings.view = function () {
                             label: 'Numéro de téléphone du magasin',
                             fieldSet: self.fieldSet,
                             defaultValue: SettingsData.storephone,
-                            regEx: /^[(]?\d{3}[)]?\s?-?\s?\d{3}\s?-?\s?\d{4}$/,
+                            regEx: /^[(]?(\d{3})[)]?\s?-?\s?(\d{3})\s?-?\s?(\d{4})$/,
+                            filter: '($1) $2-$3',
                             errorText: 'Entrez un numéro de téléphone valide (ex.: (555) 555-2345).'
                         }),
                     ]),
@@ -310,7 +603,17 @@ Settings.view = function () {
                             defaultValue: SettingsData.bdcoup,
                             regEx: /^\d{5}$/,
                             errorText: 'Entrez un code de bon valide (ex.: 12345).'
-                        })
+                        }),
+                        m('div.field', [
+                            m('label.label', 'Options d\'affichage des écofrais'),
+                            m('div.control', m('div.select', {onchange: function (e) {
+                                self.ecoSetting = e.target.value;
+                            }}, m('select', [
+                                m('option', {value: EcoSetting.INCLUDE, selected: self.ecoSetting == EcoSetting.INCLUDE}, 'Inclure les écofrais dans le prix de l\'item'),
+                                m('option', {value: EcoSetting.INSERT, selected: self.ecoSetting == EcoSetting.INSERT}, 'Ajouter les écofrais sur leur propre ligne de soumission')
+                            ]))),
+                            m('p.help', "Vous pouvez afficher les écofrais dans votre soumission de deux façons: si vous choisissez d'inclure les écofrais dans le prix de l'item, un astérisque sera placé à côté du prix avec une note indiquant que les écofrais ont été incorporés. Si vous désirez avoir les écofrais sur leur propre ligne à la place, ils seront placés directement sous l'item. Notez par contre qu'une soumission ne peut avoir qu'un maximum de 18 lignes: une soumission d'articles technologiques risque de se remplir rapidement!")
+                        ])
                     ])
                 ]),
                 m('.field.is-grouped.notification', [
