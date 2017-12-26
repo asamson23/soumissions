@@ -7,6 +7,14 @@ var zFill = function(s) {
     return ('0' + s).slice(-2);
 }
 
+var serializeFieldSet = function(fieldSet) {
+    var res = {};
+    Object.keys(fieldSet).map(function (o) {
+        res[o] = fieldSet[o].value;
+    });
+    return res;
+}
+
 var EcoSetting = {
     INCLUDE: 'INCLUDE',
     INSERT: 'INSERT'
@@ -211,7 +219,7 @@ var InputField = {
         self.onChange = function (e) {
             params.fieldSet[params.name].value = e.target.value;
             if (typeof params.onChange === 'function') {
-                params.onChange(e);
+                params.onChange(e, params.fieldSet[params.name]);
             };
         }
         self.onExit = function () {
@@ -335,7 +343,32 @@ var NewQuote = {}
 NewQuote.oninit = function () {
     var self = this;
     self.fieldSet = {};
+    self.quoteFields = {};
+    self.quoteItems = [];
     self.quote = QuoteData.newQuote();
+    self.isLoading = false;
+    self.notFound = false;
+
+    self.loadSku = function (e, field) {
+        if (field.value !== '') {
+            self.isLoading = true;
+            self.notFound = false;
+            m.request('https://hook.io/jfdesrochers/splslookup/' + field.value).then(function (value) {
+                console.log(value);
+                self.quoteFields['desc'].value = value.description;
+                self.quoteFields['price'].value = value.listPrice;
+                self.isLoading = false;
+            }).catch(function (err) {
+                self.isLoading = false;
+                self.notFound = true;
+                setTimeout(function () {
+                    self.notFound = false;
+                    m.redraw();
+                }, 2000);
+                console.error(err);
+            })
+        }
+    }
 }
 
 NewQuote.view = function () {
@@ -535,6 +568,75 @@ NewQuote.view = function () {
                             errorText: 'Entrez un code postal valide (ex.: H0H 0H0).'
                         }),
                     ])
+                ])
+            ])
+        ]),
+        m('section.section.is-small', [
+            m('.container', [
+                m('h1.title.is-4', '3. Items de votre soumission'),
+                m('h2.subtitle.is-6', 'Vous pouvez ajouter jusqu\'à 18 items à votre soumission ci-dessous.'),
+                m('table.table.is-fullwidth', [
+                    m('thead', m('tr', [
+                        m('th', m('abbr', {title: 'Quantité'}, 'Qté')),
+                        m('th', 'UGS'),
+                        m('th', 'Description'),
+                        m('th', m('abbr', {title: 'Prix unitaire'}, 'Prix')),
+                        m('th', 'Rabais'),
+                        m('th', 'Écofrais'),
+                        m('th', 'Total')
+                    ])),
+                    m('tbody', self.quoteItems.length > 0 ? '' : m('tr', m('td', {colspan: 7}, 'Aucun item à afficher.')))
+                ]),
+                m('h2.subtitle.is-5', 'Ajouter un item'),
+                m('.columns', [
+                    m('.column', m(InputField, {
+                        name: 'qty',
+                        label: 'Quantité',
+                        fieldSet: self.quoteFields,
+                        defaultValue: '1',
+                        regEx: /^[1-9]\d*$/,
+                        errorText: 'Entrez une quantité valide (> 0).'
+                    })),
+                    m('.column', m(InputField, {
+                        name: 'sku',
+                        label: 'UGS',
+                        fieldSet: self.quoteFields,
+                        defaultValue: '',
+                        regEx: /^.+$/,
+                        onChange: self.loadSku,
+                        errorText: 'Entrez une UGS valide.',
+                        helpText: self.notFound ? 'Item non trouvé!' : self.isLoading ? 'Chargement de l\'item...' : '',
+                        icon: self.isLoading ? 'fa fa-cog fa-spin' : 'fa fa-search'
+                    })),
+                    m('.column', m(InputField, {
+                        name: 'desc',
+                        label: 'Description',
+                        fieldSet: self.quoteFields,
+                        defaultValue: '',
+                        regEx: /^.+$/,
+                        errorText: 'Entrez une description valide.'
+                    })),
+                    m('.column', m(InputField, {
+                        name: 'price',
+                        label: 'Prix unitaire',
+                        fieldSet: self.quoteFields,
+                        defaultValue: '',
+                        regEx: /^(\d+)(?:[\,|\.](\d{1,2}))?$/,
+                        filter: function (v, r) {
+                            var m = r.exec(v);
+                            if (!m[1]) return '';
+                            if (m[2]) {
+                                if (m[2].length == 1) {
+                                    return m[1] + '.' + m[2] + '0';
+                                } else {
+                                    return m[1] + '.' + m[2];
+                                }
+                            } else {
+                                return m[1] + '.00';
+                            }
+                        },
+                        errorText: 'Entrez un prix valide. (ex.: 25.00)'
+                    })),
                 ])
             ])
         ])
