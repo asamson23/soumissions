@@ -10,3 +10,7 @@ body {
 .section.is-small {
     padding: 1.5rem;
 }
+
+.field > .field {
+    margin-bottom: 0;
+}

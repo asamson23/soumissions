@@ -195,6 +195,20 @@ var QuoteHeader = function (activeTab) {
     ]);
 }
 
+var FieldGroup = {
+    view: function (vnode) {
+        var params = vnode.attrs;
+        return m('div.field', [
+            m('label.label' + (params.small ? '.is-small' : ''), params.label),
+            params.hasAddons ? m('div.field' + (params.hasAddons ? '.has-addons' : ''), vnode.children) :
+            vnode.children,
+            (params.isValid === true && params.successText) ? m('p.help.is-success', params.successText) :
+            (params.isValid === false && params.errorText) ? m('p.help.is-danger', params.errorText) : 
+            (params.helpText) ? m('p.help', params.helpText) : ''
+        ])
+    }
+}
+
 var InputField = {
     oninit: function (vnode) {
         var params = vnode.attrs;
@@ -237,9 +251,8 @@ var InputField = {
         var params = vnode.attrs;
         var self = this;
 
-        return m('div.field', [
-            m('label.label' + (params.small ? '.is-small' : ''), params.label),
-            m('div.control' + (params.icon ? '.has-icons-right' : ''), [
+        var render = [
+            m('div.control' + (params.icon ? '.has-icons-right' : '') + (params.fullwidth ? '.is-expanded' : ''), [
                 m('input.input'  + (params.small ? '.is-small' : '') + (params.fieldSet[params.name].valid === true ? '.is-success' : params.fieldSet[params.name].valid === false ? '.is-danger' : ''), {
                     oncreate: function (vdom) {
                         if (params.autofocus) {
@@ -256,11 +269,26 @@ var InputField = {
                     disabled: params.disabled || false
                 }),
                 params.icon ? m('span.icon.is-small.is-right', m('i', {className: params.icon})) : ''
-            ]),
-            (params.fieldSet[params.name].valid === true && params.successText) ? m('p.help.is-success', params.successText) :
-            (params.fieldSet[params.name].valid === false && params.errorText) ? m('p.help.is-danger', params.errorText) : 
-            (params.helpText) ? m('p.help', params.helpText) : ''
-        ])
+            ])
+        ];
+        if (params.manualGrouping === true) {
+            return render;
+        } else {
+            var hasAddons = false;
+            if (Array.isArray(params.manualGrouping)) {
+                render = render.concat(params.manualGrouping);
+                hasAddons = true;
+            }
+            return m(FieldGroup, {
+                hasAddons: hasAddons,
+                label: params.label,
+                small: params.small,
+                helpText: params.helpText,
+                successText: params.successText,
+                errorText: params.errorText,
+                isValid: params.fieldSet[params.name].valid
+            }, render);
+        }
     }
 }
 
@@ -297,9 +325,8 @@ var SelectField = {
         var params = vnode.attrs;
         var self = this;
 
-        return m('div.field', [
-            m('label.label' + (params.small ? '.is-small' : ''), params.label),
-            m('div.control' + (params.icon ? '.has-icons-right' : ''), [
+        var render = [
+            m('div.control' + (params.icon ? '.has-icons-right' : '') + (params.fullwidth ? '.is-expanded' : ''), [
                 m('div.select'  + (params.small ? '.is-small' : '') + (params.fullwidth ? '.is-fullwidth' : '') + (params.fieldSet[params.name].valid === true ? '.is-success' : params.fieldSet[params.name].valid === false ? '.is-danger' : ''), [
                     m('select', {
                         oncreate: function (vdom) {
@@ -317,11 +344,26 @@ var SelectField = {
                     }))
                 ]),
                 params.icon ? m('span.icon.is-small.is-right', m('i', {className: params.icon})) : ''
-            ]),
-            (params.fieldSet[params.name].valid === true && params.successText) ? m('p.help.is-success', params.successText) :
-            (params.fieldSet[params.name].valid === false && params.errorText) ? m('p.help.is-danger', params.errorText) : 
-            (params.helpText) ? m('p.help', params.helpText) : ''
-        ])
+            ])
+        ];
+        if (params.manualGrouping === true) {
+            return render;
+        } else {
+            var hasAddons = false;
+            if (Array.isArray(params.manualGrouping)) {
+                render = render.concat(params.manualGrouping);
+                hasAddons = true;
+            }
+            return m(FieldGroup, {
+                hasAddons: hasAddons,
+                label: params.label,
+                small: params.small,
+                helpText: params.helpText,
+                successText: params.successText,
+                errorText: params.errorText,
+                isValid: params.fieldSet[params.name].valid
+            }, render);
+        }
     }
 }
 
@@ -589,7 +631,7 @@ NewQuote.view = function () {
                 ]),
                 m('h2.subtitle.is-5', 'Ajouter un item'),
                 m('.columns', [
-                    m('.column', m(InputField, {
+                    m('.column.is-1', m(InputField, {
                         name: 'qty',
                         label: 'Quantité',
                         fieldSet: self.quoteFields,
@@ -608,7 +650,7 @@ NewQuote.view = function () {
                         helpText: self.notFound ? 'Item non trouvé!' : self.isLoading ? 'Chargement de l\'item...' : '',
                         icon: self.isLoading ? 'fa fa-cog fa-spin' : 'fa fa-search'
                     })),
-                    m('.column', m(InputField, {
+                    m('.column.is-4', m(InputField, {
                         name: 'desc',
                         label: 'Description',
                         fieldSet: self.quoteFields,
@@ -637,6 +679,42 @@ NewQuote.view = function () {
                         },
                         errorText: 'Entrez un prix valide. (ex.: 25.00)'
                     })),
+                    m('.column', [
+                        m(InputField, {
+                            manualGrouping: [
+                                m(SelectField, {
+                                    manualGrouping: true,
+                                    name: 'rebatetype',
+                                    fieldSet: self.fieldSet, 
+                                    defaultValue: '$',
+                                    options: [
+                                        {value: '$', label: '$'},
+                                        {value: '%', label: '%'}
+                                    ]
+                                })
+                            ],
+                            name: 'rebatevalue',
+                            label: 'Rabais',
+                            fieldSet: self.quoteFields,
+                            defaultValue: '',
+                            fullwidth: true,
+                            regEx: /^(\d+)(?:[\,|\.](\d{1,2}))?$/,
+                            filter: function (v, r) {
+                                var m = r.exec(v);
+                                if (!m[1]) return '';
+                                if (m[2]) {
+                                    if (m[2].length == 1) {
+                                        return m[1] + '.' + m[2] + '0';
+                                    } else {
+                                        return m[1] + '.' + m[2];
+                                    }
+                                } else {
+                                    return m[1] + '.00';
+                                }
+                            },
+                            errorText: 'Entrez un rabais valide. (ex.: 25.00)'
+                        })
+                    ]),
                 ])
             ])
         ])
