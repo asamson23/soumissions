@@ -9,16 +9,37 @@ var zFill = function(s) {
 
 var serializeFieldSet = function(fieldSet) {
     var res = {};
-    Object.keys(fieldSet).map(function (o) {
+    Object.keys(fieldSet).forEach(function (o) {
         res[o] = fieldSet[o].value;
     });
     return res;
 }
 
-var EcoSetting = {
+var deserializeFieldSet = function(data, fieldSet) {
+    Object.keys(data).forEach(function (o) {
+        if (fieldSet[o]) {
+            fieldSet[o].value = data[o];
+            fieldSet[o].valid = null;
+        }
+    });
+}
+
+var resetValidation = function(fieldSet) {
+    Object.keys(fieldSet).forEach(function (o) {
+        fieldSet[o].valid = null;
+    });
+}
+
+var validateFieldSet = function (fieldSet) {
+    return Object.keys(fieldSet).every(function (k) {
+        return fieldSet[k].validate();
+    })
+}
+
+/*var EcoSetting = {
     INCLUDE: 'INCLUDE',
     INSERT: 'INSERT'
-}
+}*/
 var SettingsData = {
     tvq: 9.9975,
     tps: 5.0,
@@ -29,7 +50,7 @@ var SettingsData = {
     storephone: '',
     bdcoup: '53431',
     loaded: false,
-    ecosetting: EcoSetting.INCLUDE,
+    /*ecosetting: EcoSetting.INCLUDE,*/
     loadSettings: function () {
         var settings = localStorage.getItem('settings');
         if (settings) {
@@ -42,7 +63,7 @@ var SettingsData = {
             this.storeaddr = settings.storeaddr;
             this.storephone = settings.storephone;
             this.storepostcode = settings.storepostcode;
-            this.ecosetting = settings.ecosetting;
+            /*this.ecosetting = settings.ecosetting;*/
             return true;
         } else {
             return false;
@@ -390,16 +411,30 @@ NewQuote.oninit = function () {
     self.quote = QuoteData.newQuote();
     self.isLoading = false;
     self.notFound = false;
+    self.editIndex = -1;
 
     self.loadSku = function (e, field) {
         if (field.value !== '') {
+            resetValidation(self.quoteFields);
             self.isLoading = true;
             self.notFound = false;
             m.request('https://hook.io/jfdesrochers/splslookup/' + field.value).then(function (value) {
-                console.log(value);
                 self.quoteFields['desc'].value = value.description;
                 self.quoteFields['price'].value = value.listPrice;
+                self.quoteFields['rebatevalue'].value = value.savings || 0;
+                self.quoteFields['rebatetype'].value = '$';
+                if (value.ecofee) {
+                    self.quoteFields['ecosku'].value = value.ecofee.recycle_sku;
+                    self.quoteFields['ecofee'].value = value.ecofee.recycle_fee;
+                } else {
+                    self.quoteFields['ecosku'].value = '';
+                    self.quoteFields['ecofee'].value = '';
+                }
                 self.isLoading = false;
+                var adb = document.getElementById('addbtn');
+                if (adb) {
+                    adb.focus();
+                };
             }).catch(function (err) {
                 self.isLoading = false;
                 self.notFound = true;
@@ -407,8 +442,59 @@ NewQuote.oninit = function () {
                     self.notFound = false;
                     m.redraw();
                 }, 2000);
+                var dsc = document.getElementById('desc');
+                if (dsc) {
+                    dsc.disabled = false;
+                    dsc.focus();
+                };
                 console.error(err);
             })
+        }
+    }
+
+    self.setEditItem = function (idx) {
+        return function (e) {
+            e.preventDefault();
+            self.editIndex = idx;
+            deserializeFieldSet(self.quoteItems[idx], self.quoteFields);
+            var qty = document.getElementById('qty');
+            if (qty) {
+                qty.focus();
+            }
+        }
+    }
+
+    self.addQuoteItem = function (e) {
+        e.preventDefault();
+        if (validateFieldSet(self.quoteFields)) {
+            if (self.editIndex > -1) {
+                self.quoteItems[self.editIndex] = serializeFieldSet(self.quoteFields);
+            } else {
+                self.quoteItems.push(serializeFieldSet(self.quoteFields));
+            }
+            self.resetFields(e);
+        }
+    }
+
+    self.deleteItem = function (e) {
+        if (self.editIndex > -1) {
+            self.quoteItems.splice(self.editIndex, 1);
+            self.resetFields(e);
+        }
+    }
+
+    self.resetFields = function (e) {
+        e.preventDefault();
+        Object.keys(self.quoteFields).forEach(function (o) {
+            self.quoteFields[o].value = '';
+            self.quoteFields[o].valid = null;
+        });
+        self.quoteFields['qty'].value = '1';
+        self.quoteFields['rebatetype'].value = '$';
+        self.editIndex = -1;
+        var qty = document.getElementById('qty');
+        if (qty) {
+            qty.focus();
         }
     }
 }
@@ -617,7 +703,7 @@ NewQuote.view = function () {
             m('.container', [
                 m('h1.title.is-4', '3. Items de votre soumission'),
                 m('h2.subtitle.is-6', 'Vous pouvez ajouter jusqu\'à 18 items à votre soumission ci-dessous.'),
-                m('table.table.is-fullwidth', [
+                m('table#quoteitems.table.is-fullwidth.is-narrow', [
                     m('thead', m('tr', [
                         m('th', m('abbr', {title: 'Quantité'}, 'Qté')),
                         m('th', 'UGS'),
@@ -625,96 +711,165 @@ NewQuote.view = function () {
                         m('th', m('abbr', {title: 'Prix unitaire'}, 'Prix')),
                         m('th', 'Rabais'),
                         m('th', 'Écofrais'),
-                        m('th', 'Total')
+                        m('th', 'Total'),
+                        m('th', '')
                     ])),
-                    m('tbody', self.quoteItems.length > 0 ? '' : m('tr', m('td', {colspan: 7}, 'Aucun item à afficher.')))
+                    m('tbody', self.quoteItems.length > 0 ? self.quoteItems.map(function (o, i) {
+                        return m('tr' + (self.editIndex === i ? '.is-selected' : ''), [
+                            m('td', o.qty),
+                            m('td', o.sku),
+                            m('td', o.desc),
+                            m('td', m.trust(o.price + '&nbsp;$')),
+                            m('td', m.trust((o.rebatetype === '$' ? o.rebatevalue : String((parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100)).toFixed(2))) + '&nbsp;$')),
+                            m('td', m.trust(o.ecofee.length ? o.ecofee + '&nbsp;$' : '-')),
+                            m('td', m.trust((o.rebatetype === '$' ?
+                            String(((parseFloat(o.price) - parseFloat(o.rebatevalue) + (o.ecofee ? parseFloat(o.ecofee) : 0)) * parseInt(o.qty)).toFixed(2)) :
+                            String(((parseFloat(o.price) - (parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100)) + (o.ecofee ? parseFloat(o.ecofee) : 0)) * parseInt(o.qty)).toFixed(2))) + '&nbsp;$')),
+                            m('td', m('a.icon', {onclick: self.setEditItem(i)}, m('i.fa.fa-lg.fa-pencil')))
+                        ])
+                    }) : m('tr', m('td', {colspan: 8}, 'Aucun item à afficher.')))
                 ]),
-                m('h2.subtitle.is-5', 'Ajouter un item'),
-                m('.columns', [
-                    m('.column.is-1', m(InputField, {
-                        name: 'qty',
-                        label: 'Quantité',
-                        fieldSet: self.quoteFields,
-                        defaultValue: '1',
-                        regEx: /^[1-9]\d*$/,
-                        errorText: 'Entrez une quantité valide (> 0).'
-                    })),
-                    m('.column', m(InputField, {
-                        name: 'sku',
-                        label: 'UGS',
-                        fieldSet: self.quoteFields,
-                        defaultValue: '',
-                        regEx: /^.+$/,
-                        onChange: self.loadSku,
-                        errorText: 'Entrez une UGS valide.',
-                        helpText: self.notFound ? 'Item non trouvé!' : self.isLoading ? 'Chargement de l\'item...' : '',
-                        icon: self.isLoading ? 'fa fa-cog fa-spin' : 'fa fa-search'
-                    })),
-                    m('.column.is-4', m(InputField, {
-                        name: 'desc',
-                        label: 'Description',
-                        fieldSet: self.quoteFields,
-                        defaultValue: '',
-                        regEx: /^.+$/,
-                        errorText: 'Entrez une description valide.'
-                    })),
-                    m('.column', m(InputField, {
-                        name: 'price',
-                        label: 'Prix unitaire',
-                        fieldSet: self.quoteFields,
-                        defaultValue: '',
-                        regEx: /^(\d+)(?:[\,|\.](\d{1,2}))?$/,
-                        filter: function (v, r) {
-                            var m = r.exec(v);
-                            if (!m[1]) return '';
-                            if (m[2]) {
-                                if (m[2].length == 1) {
-                                    return m[1] + '.' + m[2] + '0';
-                                } else {
-                                    return m[1] + '.' + m[2];
-                                }
-                            } else {
-                                return m[1] + '.00';
-                            }
-                        },
-                        errorText: 'Entrez un prix valide. (ex.: 25.00)'
-                    })),
-                    m('.column', [
-                        m(InputField, {
-                            manualGrouping: [
-                                m(SelectField, {
-                                    manualGrouping: true,
-                                    name: 'rebatetype',
-                                    fieldSet: self.fieldSet, 
-                                    defaultValue: '$',
-                                    options: [
-                                        {value: '$', label: '$'},
-                                        {value: '%', label: '%'}
-                                    ]
-                                })
-                            ],
-                            name: 'rebatevalue',
-                            label: 'Rabais',
-                            fieldSet: self.quoteFields,
-                            defaultValue: '',
-                            fullwidth: true,
-                            regEx: /^(\d+)(?:[\,|\.](\d{1,2}))?$/,
-                            filter: function (v, r) {
-                                var m = r.exec(v);
-                                if (!m[1]) return '';
-                                if (m[2]) {
-                                    if (m[2].length == 1) {
-                                        return m[1] + '.' + m[2] + '0';
+                m('.card', [
+                    m('header.card-header', m('p.card-header-title', self.editIndex > -1 ? 'Modifier un item' : 'Ajouter un item')),
+                    m('.card-content', [
+                        m('.columns.is-multiline', [
+                            m('.column.is-one-quarter', m(InputField, {
+                                name: 'qty',
+                                label: 'Quantité',
+                                fieldSet: self.quoteFields,
+                                defaultValue: '1',
+                                regEx: /^[1-9]\d*$/,
+                                errorText: 'Entrez une quantité valide (> 0).',
+                                disabled: self.isLoading
+                            })),
+                            m('.column.is-one-quarter', m(InputField, {
+                                name: 'sku',
+                                label: 'UGS',
+                                fieldSet: self.quoteFields,
+                                defaultValue: '',
+                                regEx: /^.+$/,
+                                onChange: self.loadSku,
+                                errorText: 'Entrez une UGS valide.',
+                                helpText: self.notFound ? 'Item non trouvé!' : self.isLoading ? 'Chargement de l\'item...' : '',
+                                icon: self.isLoading ? 'fa fa-cog fa-spin' : 'fa fa-search',
+                                disabled: self.isLoading
+                            })),
+                            m('.column.is-half', m(InputField, {
+                                name: 'desc',
+                                label: 'Description',
+                                fieldSet: self.quoteFields,
+                                defaultValue: '',
+                                regEx: /^.+$/,
+                                errorText: 'Entrez une description valide.',
+                                disabled: self.isLoading
+                            })),
+                            m('.column.is-one-quarter', m(InputField, {
+                                name: 'price',
+                                label: 'Prix unitaire',
+                                fieldSet: self.quoteFields,
+                                defaultValue: '',
+                                regEx: /^(\d+)(?:[\,|\.](\d{1,2}))?$/,
+                                filter: function (v, r) {
+                                    var m = r.exec(v);
+                                    if (!m[1]) return '';
+                                    if (m[2]) {
+                                        if (m[2].length == 1) {
+                                            return m[1] + '.' + m[2] + '0';
+                                        } else {
+                                            return m[1] + '.' + m[2];
+                                        }
                                     } else {
-                                        return m[1] + '.' + m[2];
+                                        return m[1] + '.00';
                                     }
-                                } else {
-                                    return m[1] + '.00';
-                                }
-                            },
-                            errorText: 'Entrez un rabais valide. (ex.: 25.00)'
-                        })
+                                },
+                                errorText: 'Entrez un prix valide. (ex.: 25.00)',
+                                disabled: self.isLoading
+                            })),
+                            m('.column.is-one-quarter', [
+                                m(InputField, {
+                                    manualGrouping: [
+                                        m(SelectField, {
+                                            manualGrouping: true,
+                                            name: 'rebatetype',
+                                            fieldSet: self.quoteFields, 
+                                            defaultValue: '$',
+                                            options: [
+                                                {value: '$', label: '$'},
+                                                {value: '%', label: '%'}
+                                            ],
+                                            disabled: self.isLoading
+                                        })
+                                    ],
+                                    name: 'rebatevalue',
+                                    label: 'Rabais',
+                                    fieldSet: self.quoteFields,
+                                    defaultValue: '',
+                                    fullwidth: true,
+                                    regEx: /^(\d+)?(?:[\,|\.](\d{1,2}))?$/,
+                                    filter: function (v, r) {
+                                        var m = r.exec(v);
+                                        if (!m[1]) return '0.00';
+                                        if (m[2]) {
+                                            if (m[2].length == 1) {
+                                                return m[1] + '.' + m[2] + '0';
+                                            } else {
+                                                return m[1] + '.' + m[2];
+                                            }
+                                        } else {
+                                            return m[1] + '.00';
+                                        }
+                                    },
+                                    errorText: 'Entrez un rabais valide. (ex.: 25.00)',
+                                    disabled: self.isLoading
+                                })
+                            ]),
+                            m('.column.is-one-quarter', m(InputField, {
+                                name: 'ecosku',
+                                label: 'Écofrais (UGS)',
+                                fieldSet: self.quoteFields,
+                                defaultValue: '',
+                                regEx: /^\d*$/,
+                                filter: function (v) {
+                                    if (v == '' && self.quoteFields['ecofee'].value != '') {
+                                        return false;
+                                    }
+                                    return v;
+                                },
+                                errorText: 'Entrez une UGS valide.',
+                                disabled: self.isLoading
+                            })),
+                            m('.column.is-one-quarter', m(InputField, {
+                                name: 'ecofee',
+                                label: 'Écofrais (Prix)',
+                                fieldSet: self.quoteFields,
+                                defaultValue: '',
+                                regEx: /^(\d+)?(?:[\,|\.](\d{1,2}))?$/,
+                                filter: function (v, r) {
+                                    if (v == '' && self.quoteFields['ecosku'].value != '') {
+                                        return false;
+                                    }
+                                    var m = r.exec(v);
+                                    if (!m[1]) return '';
+                                    if (m[2]) {
+                                        if (m[2].length == 1) {
+                                            return m[1] + '.' + m[2] + '0';
+                                        } else {
+                                            return m[1] + '.' + m[2];
+                                        }
+                                    } else {
+                                        return m[1] + '.00';
+                                    }
+                                },
+                                errorText: 'Entrez un prix valide. (ex.: 25.00)',
+                                disabled: self.isLoading
+                            })),
+                        ])
                     ]),
+                    m('footer.card-footer', [
+                        m('button#addbtn.button.is-white.card-footer-item', {onclick: self.addQuoteItem}, self.editIndex > -1 ? 'Sauvegarder' : 'Ajouter'),
+                        self.editIndex > -1 ? m('button#resetbtn.button.is-danger.card-footer-item', {onclick: self.deleteItem}, 'Supprimer') : '',
+                        m('button#resetbtn.button.is-white.card-footer-item', {onclick: self.resetFields}, self.editIndex > -1 ? 'Annuler' : 'Réinitialiser')
+                    ])
                 ])
             ])
         ])
@@ -741,11 +896,9 @@ var Settings = {}
 Settings.oninit = function () {
     var self = this;
     self.fieldSet = {};
-    self.ecoSetting = SettingsData.ecosetting;
+    /*self.ecoSetting = SettingsData.ecosetting;*/
     self.save = function () {
-        var valid = Object.keys(self.fieldSet).every(function (k) {
-            return self.fieldSet[k].validate();
-        })
+        var valid = validateFieldSet(self.fieldSet);
         if (valid) {
             SettingsData.bdcoup = self.fieldSet['bdcoup'].value;
             SettingsData.tvq = parseFloat(self.fieldSet['tvq'].value);
@@ -755,7 +908,7 @@ Settings.oninit = function () {
             SettingsData.storecity = self.fieldSet['storecity'].value;
             SettingsData.storepostcode = self.fieldSet['storepostcode'].value;
             SettingsData.storephone = self.fieldSet['storephone'].value;
-            SettingsData.ecosetting = self.fieldSet['ecosetting'].value;
+            /*SettingsData.ecosetting = self.fieldSet['ecosetting'].value;*/
             SettingsData.saveSettings();
             SettingsData.loaded = true;
             m.route.set('/');
@@ -845,7 +998,7 @@ Settings.view = function () {
                             defaultValue: SettingsData.bdcoup,
                             regEx: /^\d{5}$/,
                             errorText: 'Entrez un code de bon valide (ex.: 12345).'
-                        }),
+                        })/*,
                         m(SelectField, {
                             name: 'ecosetting',
                             label: 'Options d\'affichage des écofrais',
@@ -857,7 +1010,7 @@ Settings.view = function () {
                                 {value: EcoSetting.INCLUDE, label: 'Inclure les écofrais dans le prix de l\'item'},
                                 {value: EcoSetting.INSERT, label: 'Ajouter les écofrais sur leur propre ligne de soumission'}
                             ]
-                        })
+                        })*/
                     ])
                 ]),
                 m('.field.is-grouped.notification', [

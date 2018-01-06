@@ -14,3 +14,31 @@ body {
 .field > .field {
     margin-bottom: 0;
 }
+
+.card-footer-item.button {
+    border: none;
+    border-radius: 0;
+    height: auto;
+}
+
+.card-footer-item.button:not(:last-child) {
+    border-right: 1px solid #dbdbdb;
+}
+
+@media (max-width: 800px) {
+    #quoteitems th:nth-child(3),
+    #quoteitems td:nth-child(3) {
+        display: none;
+    }
+}
+
+@media (max-width: 640px) {
+    #quoteitems th:nth-child(3),
+    #quoteitems td:nth-child(3),
+    #quoteitems th:nth-child(5),
+    #quoteitems td:nth-child(5),
+    #quoteitems th:nth-child(6),
+    #quoteitems td:nth-child(6) {
+        display: none;
+    }
+}
