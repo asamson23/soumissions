@@ -190,12 +190,12 @@ var QuoteData = {
 QuoteData.loadQuotes();
 
 var QuoteHeader = function (activeTab) {
-    return m('section.hero.is-info.is-bold', [
+    return m('header.hero.is-info.is-bold', [
         m('.hero-body', m('.container', [
-            m('h1.title.is-1', 'Soumissions par J-F Desrochers'),
-            m('h2.subtitle.is-3', 'Rédigez vos soumissions rapidement et facilement avec ce petit programme')
+            m('h1.title.is-1-tablet', 'Soumissions par J-F Desrochers'),
+            m('h2.subtitle.is-3-tablet', 'Rédigez vos soumissions rapidement et facilement avec ce petit programme')
         ])),
-        m('.hero-foot', m('nav.tabs.is-boxed', m('.container', m('ul', [
+        m('.hero-foot', m('nav.tabs.is-boxed.is-hidden-mobile', m('ul', [
             m('li' + (activeTab == 'quotelist' ? '.is-active' : ''), m('a[href="/"]', {oncreate: m.route.link}, [
                 m('span.icon.is-small', m('i.fa.fa-home')),
                 m('span', 'Mes soumissions')
@@ -212,7 +212,33 @@ var QuoteHeader = function (activeTab) {
                 m('span.icon.is-small', m('i.fa.fa-cog')),
                 m('span', 'Réglages')
             ]))
-        ]))))
+        ])))
+    ]);
+}
+
+var QuoteFooter = function (activeTab) {
+    return m('footer.footer', [
+        m('.container', [
+            m('nav.tabs.is-fullwidth.is-hidden-tablet', m('ul', [
+                m('li' + (activeTab == 'quotelist' ? '.is-active' : ''), m('a[href="/"]', {oncreate: m.route.link}, [
+                    m('span.icon.is-small', m('i.fa.fa-lg.fa-home')),
+                    m('span', 'Liste')
+                ])),
+                m('li' + (activeTab == 'newquote' ? '.is-active' : ''), m('a[href="/new"]', {oncreate: m.route.link}, [
+                    m('span.icon.is-small', m('i.fa.fa-lg.fa-pencil-square-o')),
+                    m('span', 'Nouvelle')
+                ])),
+                m('li' + (activeTab == 'importquote' ? '.is-active' : ''), m('a[href="/load"]', {oncreate: m.route.link}, [
+                    m('span.icon.is-small', m('i.fa.fa-lg.fa-upload')),
+                    m('span', 'Charger')
+                ])),
+                m('li' + (activeTab == 'settings' ? '.is-active' : ''), m('a[href="/settings"]', {oncreate: m.route.link}, [
+                    m('span.icon.is-small', m('i.fa.fa-lg.fa-cog')),
+                    m('span', 'Réglages')
+                ]))
+            ])),
+            m('content.is-hidden-mobile', m.trust('<strong>Soumissions</strong>, Copyright © 2018 par <a href="https://github.com/jfdesrochers/soumissions">Jean-François Desrochers</a>. Le code source de ce programme est disponible sous la license <a href="http://opensource.org/licenses/mit-license.php">MIT</a>.'))
+        ])
     ]);
 }
 
@@ -393,11 +419,14 @@ var QuoteList = {}
 QuoteList.view = function () {
     return [
         QuoteHeader('quotelist'),
-        m('section.section', [
-            m('.container', [
-
+        m('div.contents', [
+            m('section.section', [
+                m('.container', [
+    
+                ])
             ])
-        ])
+        ]),
+        QuoteFooter('quotelist')
     ];
 }
 
@@ -503,312 +532,276 @@ NewQuote.view = function () {
     var self = this;
     return [
         QuoteHeader('newquote'),
-        m('section.section', [
-            m('.container', [
-                m('.columns', [
-                    m('.column', [
-                        m('h1.title', 'Créer une nouvelle soumission'),
-                        m('h2.subtitle', 'Veuillez remplir les champs de cette page. La soumission sera sauvegardée automatiquement.'),
-                    ]),
-                    m('.column.is-3.notification', [
-                        m('div.field', [
-                            m('label.label.is-small', 'Numéro du devis'),
-                            m('div.control', m('p.is-small', self.quote.id))
+        m('div.contents', [
+            m('section.section', [
+                m('.container', [
+                    m('.columns', [
+                        m('.column', [
+                            m('h1.title', 'Créer une nouvelle soumission'),
+                            m('h2.subtitle', 'Veuillez remplir les champs de cette page. La soumission sera sauvegardée automatiquement.'),
                         ]),
-                        m('div.field', [
-                            m('label.label.is-small', 'Statut du devis'),
-                            m('div.control', self.quote.status == QuoteStatus.NEW ? m('p.is-small', 'NOUVEAU') : '')
-                        ]),
-                    ])
-                ])
-            ])
-        ]),
-        m('section.section.is-small', [
-            m('.container', [
-                m('h1.title.is-4', '1. Renseignements Généraux'),
-                m('h2.subtitle.is-6', 'D\'abord, quelques renseignements généraux sur la soumission.'),
-                m('.columns', [
-                    m('.column', [
-                        m(InputField, {
-                            name: 'assno',
-                            label: 'Votre numéro d\'associé',
-                            fieldSet: self.fieldSet,
-                            defaultValue: '',
-                            regEx: /^\d{7}$/,
-                            helpText: 'Entrez votre numéro d\'associé. (ex.: 1234567 ou 0004567)',
-                            errorText: 'Entrez un numéro d\'associé valide. (ex.: 1234567 ou 0004567)',
-                            autofocus: true
-                        }),
-                        m(InputField, {
-                            name: 'assname',
-                            label: 'Votre nom',
-                            fieldSet: self.fieldSet,
-                            defaultValue: '',
-                            regEx: /^.+$/,
-                            filter: titleCase.convert,
-                            helpText: 'Entrez votre nom complet (prénom et nom)',
-                            errorText: 'Entrez un nom valide.'
-                        })
-                    ]),
-                    m('.column', [
-                        m(InputField, {
-                            name: 'quotedate',
-                            label: 'Date de la soumission',
-                            fieldSet: self.fieldSet,
-                            defaultValue: QuoteData.dateToStr(self.quote.date),
-                            regEx: /^(0[1-9]|[12][0-9]|3[01])[- /.]?(0[1-9]|1[0-2])[- /.]?((?:19|20)\d\d)$/,
-                            filter: function (s, rEx) {
-                                self.quote.date = QuoteData.strToDate(s.replace(rEx, '$1/$2/$3'));
-                                return QuoteData.dateToStr(self.quote.date);
-                            },
-                            helpText: '(jj/mm/aaaa)',
-                            errorText: 'Entrez une date valide (jj/mm/aaaa).'
-                        }),
-                        m(InputField, {
-                            name: 'quoteexpires',
-                            label: 'Date d\'expiration',
-                            fieldSet: self.fieldSet,
-                            defaultValue: QuoteData.dateToStr(self.quote.expires),
-                            regEx: /^(0[1-9]|[12][0-9]|3[01])[- /.]?(0[1-9]|1[0-2])[- /.]?((?:19|20)\d\d)$/,
-                            filter: function (s, rEx) {
-                                self.quote.expires = QuoteData.strToDate(s.replace(rEx, '$1/$2/$3'));
-                                if (self.quote.expires < self.quote.date) {
-                                    return false;
-                                }
-                                return QuoteData.dateToStr(self.quote.expires);
-                            },
-                            helpText: '(jj/mm/aaaa)',
-                            errorText: 'Entrez une date valide (jj/mm/aaaa). La date doit être supérieure à la date de soumission.'
-                        })
-                    ])
-                ])
-            ])
-        ]),
-        m('section.section.is-small', [
-            m('.container', [
-                m('h1.title.is-4', '2. Renseignements sur votre client'),
-                m('h2.subtitle.is-6', 'Veuillez remplir tous les champs ci-dessous.'),
-                m('.columns', [
-                    m('.column', [
-                        m('.columns', [
-                            m('.column', [
-                                m(InputField, {
-                                    name: 'custphone',
-                                    label: 'Numéro de téléphone du client',
-                                    fieldSet: self.fieldSet,
-                                    defaultValue: '',
-                                    regEx: /^[(]?(\d{3})[)]?\s?-?\s?(\d{3})\s?-?\s?(\d{4})$/,
-                                    filter: '($1) $2-$3',
-                                    helpText: 'Entrez le numéro de téléphone de votre client.',
-                                    errorText: 'Entrez un numéro de téléphone valide. (ex.: (555) 555-2345)'
-                                })
+                        m('.column.is-3.notification', [
+                            m('div.field', [
+                                m('label.label.is-small', 'Numéro du devis'),
+                                m('div.control', m('p.is-small', self.quote.id))
                             ]),
-                            m('.column', [
-                                m(InputField, {
-                                    name: 'custemail',
-                                    label: 'Adresse courriel du client',
-                                    fieldSet: self.fieldSet,
-                                    defaultValue: '',
-                                    regEx: /^([A-Z|a-z|0-9](\.|_){0,1})+[A-Z|a-z|0-9]\@([A-Z|a-z|0-9])+((\.){0,1}[A-Z|a-z|0-9]){2}\.[a-z]{2,3}$/,
-                                    helpText: 'Entrez l\'adresse courriel de votre client.',
-                                    errorText: 'Entrez une adresse courriel valide. (ex.: nom@entreprise.com)'
-                                })
+                            m('div.field', [
+                                m('label.label.is-small', 'Statut du devis'),
+                                m('div.control', self.quote.status == QuoteStatus.NEW ? m('p.is-small', 'NOUVEAU') : '')
                             ]),
-                        ]),
-                        m(InputField, {
-                            name: 'custname',
-                            label: 'Nom de la personne-ressource',
-                            fieldSet: self.fieldSet,
-                            defaultValue: '',
-                            regEx: /^.+$/,
-                            filter: titleCase.convert,
-                            helpText: 'Entrez le nom complet (prénom et nom)',
-                            errorText: 'Entrez un nom valide.'
-                        }),
-                        m(InputField, {
-                            name: 'custbusiness',
-                            label: 'Nom de l\'entreprise',
-                            fieldSet: self.fieldSet,
-                            defaultValue: '',
-                            regEx: /^.+$/,
-                            filter: titleCase.convert,
-                            helpText: 'Entrez le nom de l\'entreprise.',
-                            errorText: 'Entrez un nom valide.'
-                        })
-                    ]),
-                    m('.column', [
-                        m(InputField, {
-                            name: 'custaddr',
-                            label: 'Adresse du client',
-                            fieldSet: self.fieldSet,
-                            defaultValue: '',
-                            regEx: /^\d+\s?.+$/,
-                            filter: titleCase.convert,
-                            helpText: 'Entrez l\'adresse de votre client.',
-                            errorText: 'Entrez une adresse valide.'
-                        }),
-                        m('.columns', [
-                            m('.column', [
-                                m(InputField, {
-                                    name: 'custcity',
-                                    label: 'Ville du client',
-                                    fieldSet: self.fieldSet,
-                                    defaultValue: '',
-                                    regEx: /^.+$/,
-                                    filter: titleCase.convert,
-                                    helpText: 'Entrez la ville de votre client.',
-                                    errorText: 'Entrez une ville valide.'
-                                })
-                            ]),
-                            m('.column', [
-                                m(SelectField, {
-                                    name: 'custprovince',
-                                    label: 'Province du client',
-                                    fieldSet: self.fieldSet, 
-                                    defaultValue: 'QC',
-                                    helpText: 'Choisissez la province de votre client.',
-                                    fullwidth: true,
-                                    options: [
-                                        {value: 'QC', label: 'Québec'},
-                                        {value: 'ON', label: 'Ontario'},
-                                        {value: 'NB', label: 'Nouveau-Brunswick'},
-                                        {value: 'NS', label: 'Nouvelle-Écosse'},
-                                        {value: 'NL', label: 'Terre-Neuve et Labrador'},
-                                        {value: 'PEI', label: 'Ile du Prince-Édouard'},
-                                        {value: 'MB', label: 'Manitoba'},
-                                        {value: 'SK', label: 'Saskatchewan'},
-                                        {value: 'AB', label: 'Alberta'},
-                                        {value: 'BC', label: 'Colombie-Britannique'}
-                                    ]
-                                })
-                            ])
-                        ]),
-                        m(InputField, {
-                            name: 'custpostcode',
-                            label: 'Code postal du client',
-                            fieldSet: self.fieldSet,
-                            defaultValue: '',
-                            regEx: /^([ABCEGHJ-NPRSTVXY]{1}\d{1}[A-Z]{1})\s?(\d{1}[A-Z]{1}\d{1})$/i,
-                            filter: function (s, rEx) {
-                                return s.replace(rEx, '$1 $2').toUpperCase();
-                            },
-                            helpText: 'Entrez le code postal de votre client (ex.: H0H 0H0).',
-                            errorText: 'Entrez un code postal valide (ex.: H0H 0H0).'
-                        }),
-                    ])
-                ])
-            ])
-        ]),
-        m('section.section.is-small', [
-            m('.container', [
-                m('h1.title.is-4', '3. Items de votre soumission'),
-                m('h2.subtitle.is-6', 'Vous pouvez ajouter jusqu\'à 18 items à votre soumission ci-dessous.'),
-                m('table#quoteitems.table.is-fullwidth.is-narrow', [
-                    m('thead', m('tr', [
-                        m('th', m('abbr', {title: 'Quantité'}, 'Qté')),
-                        m('th', 'UGS'),
-                        m('th', 'Description'),
-                        m('th', m('abbr', {title: 'Prix unitaire'}, 'Prix')),
-                        m('th', 'Rabais'),
-                        m('th', 'Écofrais'),
-                        m('th', 'Total'),
-                        m('th', '')
-                    ])),
-                    m('tbody', self.quoteItems.length > 0 ? self.quoteItems.map(function (o, i) {
-                        return m('tr' + (self.editIndex === i ? '.is-selected' : ''), [
-                            m('td', o.qty),
-                            m('td', o.sku),
-                            m('td', o.desc),
-                            m('td', m.trust(o.price + '&nbsp;$')),
-                            m('td', m.trust((o.rebatetype === '$' ? o.rebatevalue : String((parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100)).toFixed(2))) + '&nbsp;$')),
-                            m('td', m.trust(o.ecofee.length ? o.ecofee + '&nbsp;$' : '-')),
-                            m('td', m.trust((o.rebatetype === '$' ?
-                            String(((parseFloat(o.price) - parseFloat(o.rebatevalue) + (o.ecofee ? parseFloat(o.ecofee) : 0)) * parseInt(o.qty)).toFixed(2)) :
-                            String(((parseFloat(o.price) - (parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100)) + (o.ecofee ? parseFloat(o.ecofee) : 0)) * parseInt(o.qty)).toFixed(2))) + '&nbsp;$')),
-                            m('td', m('a.icon', {onclick: self.setEditItem(i)}, m('i.fa.fa-lg.fa-pencil')))
                         ])
-                    }) : m('tr', m('td', {colspan: 8}, 'Aucun item à afficher.')))
-                ]),
-                m('.card', [
-                    m('header.card-header', m('p.card-header-title', self.editIndex > -1 ? 'Modifier un item' : 'Ajouter un item')),
-                    m('.card-content', [
-                        m('.columns.is-multiline', [
-                            m('.column.is-one-quarter', m(InputField, {
-                                name: 'qty',
-                                label: 'Quantité',
-                                fieldSet: self.quoteFields,
-                                defaultValue: '1',
-                                regEx: /^[1-9]\d*$/,
-                                errorText: 'Entrez une quantité valide (> 0).',
-                                disabled: self.isLoading
-                            })),
-                            m('.column.is-one-quarter', m(InputField, {
-                                name: 'sku',
-                                label: 'UGS',
-                                fieldSet: self.quoteFields,
+                    ])
+                ])
+            ]),
+            m('section.section.is-small', [
+                m('.container', [
+                    m('h1.title.is-4', '1. Renseignements Généraux'),
+                    m('h2.subtitle.is-6', 'D\'abord, quelques renseignements généraux sur la soumission.'),
+                    m('.columns', [
+                        m('.column', [
+                            m(InputField, {
+                                name: 'assno',
+                                label: 'Votre numéro d\'associé',
+                                fieldSet: self.fieldSet,
+                                defaultValue: '',
+                                regEx: /^\d{7}$/,
+                                helpText: 'Entrez votre numéro d\'associé. (ex.: 1234567 ou 0004567)',
+                                errorText: 'Entrez un numéro d\'associé valide. (ex.: 1234567 ou 0004567)',
+                                autofocus: true
+                            }),
+                            m(InputField, {
+                                name: 'assname',
+                                label: 'Votre nom',
+                                fieldSet: self.fieldSet,
                                 defaultValue: '',
                                 regEx: /^.+$/,
-                                onChange: self.loadSku,
-                                errorText: 'Entrez une UGS valide.',
-                                helpText: self.notFound ? 'Item non trouvé!' : self.isLoading ? 'Chargement de l\'item...' : '',
-                                icon: self.isLoading ? 'fa fa-cog fa-spin' : 'fa fa-search',
-                                disabled: self.isLoading
-                            })),
-                            m('.column.is-half', m(InputField, {
-                                name: 'desc',
-                                label: 'Description',
-                                fieldSet: self.quoteFields,
-                                defaultValue: '',
-                                regEx: /^.+$/,
-                                errorText: 'Entrez une description valide.',
-                                disabled: self.isLoading
-                            })),
-                            m('.column.is-one-quarter', m(InputField, {
-                                name: 'price',
-                                label: 'Prix unitaire',
-                                fieldSet: self.quoteFields,
-                                defaultValue: '',
-                                regEx: /^(\d+)(?:[\,|\.](\d{1,2}))?$/,
-                                filter: function (v, r) {
-                                    var m = r.exec(v);
-                                    if (!m[1]) return '';
-                                    if (m[2]) {
-                                        if (m[2].length == 1) {
-                                            return m[1] + '.' + m[2] + '0';
-                                        } else {
-                                            return m[1] + '.' + m[2];
-                                        }
-                                    } else {
-                                        return m[1] + '.00';
-                                    }
+                                filter: titleCase.convert,
+                                helpText: 'Entrez votre nom complet (prénom et nom)',
+                                errorText: 'Entrez un nom valide.'
+                            })
+                        ]),
+                        m('.column', [
+                            m(InputField, {
+                                name: 'quotedate',
+                                label: 'Date de la soumission',
+                                fieldSet: self.fieldSet,
+                                defaultValue: QuoteData.dateToStr(self.quote.date),
+                                regEx: /^(0[1-9]|[12][0-9]|3[01])[- /.]?(0[1-9]|1[0-2])[- /.]?((?:19|20)\d\d)$/,
+                                filter: function (s, rEx) {
+                                    self.quote.date = QuoteData.strToDate(s.replace(rEx, '$1/$2/$3'));
+                                    return QuoteData.dateToStr(self.quote.date);
                                 },
-                                errorText: 'Entrez un prix valide. (ex.: 25.00)',
-                                disabled: self.isLoading
-                            })),
-                            m('.column.is-one-quarter', [
-                                m(InputField, {
-                                    manualGrouping: [
-                                        m(SelectField, {
-                                            manualGrouping: true,
-                                            name: 'rebatetype',
-                                            fieldSet: self.quoteFields, 
-                                            defaultValue: '$',
-                                            options: [
-                                                {value: '$', label: '$'},
-                                                {value: '%', label: '%'}
-                                            ],
-                                            disabled: self.isLoading
-                                        })
-                                    ],
-                                    name: 'rebatevalue',
-                                    label: 'Rabais',
+                                helpText: '(jj/mm/aaaa)',
+                                errorText: 'Entrez une date valide (jj/mm/aaaa).'
+                            }),
+                            m(InputField, {
+                                name: 'quoteexpires',
+                                label: 'Date d\'expiration',
+                                fieldSet: self.fieldSet,
+                                defaultValue: QuoteData.dateToStr(self.quote.expires),
+                                regEx: /^(0[1-9]|[12][0-9]|3[01])[- /.]?(0[1-9]|1[0-2])[- /.]?((?:19|20)\d\d)$/,
+                                filter: function (s, rEx) {
+                                    self.quote.expires = QuoteData.strToDate(s.replace(rEx, '$1/$2/$3'));
+                                    if (self.quote.expires < self.quote.date) {
+                                        return false;
+                                    }
+                                    return QuoteData.dateToStr(self.quote.expires);
+                                },
+                                helpText: '(jj/mm/aaaa)',
+                                errorText: 'Entrez une date valide (jj/mm/aaaa). La date doit être supérieure à la date de soumission.'
+                            })
+                        ])
+                    ])
+                ])
+            ]),
+            m('section.section.is-small', [
+                m('.container', [
+                    m('h1.title.is-4', '2. Renseignements sur votre client'),
+                    m('h2.subtitle.is-6', 'Veuillez remplir tous les champs ci-dessous.'),
+                    m('.columns', [
+                        m('.column', [
+                            m('.columns', [
+                                m('.column', [
+                                    m(InputField, {
+                                        name: 'custphone',
+                                        label: 'Numéro de téléphone du client',
+                                        fieldSet: self.fieldSet,
+                                        defaultValue: '',
+                                        regEx: /^[(]?(\d{3})[)]?\s?-?\s?(\d{3})\s?-?\s?(\d{4})$/,
+                                        filter: '($1) $2-$3',
+                                        helpText: 'Entrez le numéro de téléphone de votre client.',
+                                        errorText: 'Entrez un numéro de téléphone valide. (ex.: (555) 555-2345)'
+                                    })
+                                ]),
+                                m('.column', [
+                                    m(InputField, {
+                                        name: 'custemail',
+                                        label: 'Adresse courriel du client',
+                                        fieldSet: self.fieldSet,
+                                        defaultValue: '',
+                                        regEx: /^([A-Z|a-z|0-9](\.|_){0,1})+[A-Z|a-z|0-9]\@([A-Z|a-z|0-9])+((\.){0,1}[A-Z|a-z|0-9]){2}\.[a-z]{2,3}$/,
+                                        helpText: 'Entrez l\'adresse courriel de votre client.',
+                                        errorText: 'Entrez une adresse courriel valide. (ex.: nom@entreprise.com)'
+                                    })
+                                ]),
+                            ]),
+                            m(InputField, {
+                                name: 'custname',
+                                label: 'Nom de la personne-ressource',
+                                fieldSet: self.fieldSet,
+                                defaultValue: '',
+                                regEx: /^.+$/,
+                                filter: titleCase.convert,
+                                helpText: 'Entrez le nom complet (prénom et nom)',
+                                errorText: 'Entrez un nom valide.'
+                            }),
+                            m(InputField, {
+                                name: 'custbusiness',
+                                label: 'Nom de l\'entreprise',
+                                fieldSet: self.fieldSet,
+                                defaultValue: '',
+                                regEx: /^.+$/,
+                                filter: titleCase.convert,
+                                helpText: 'Entrez le nom de l\'entreprise.',
+                                errorText: 'Entrez un nom valide.'
+                            })
+                        ]),
+                        m('.column', [
+                            m(InputField, {
+                                name: 'custaddr',
+                                label: 'Adresse du client',
+                                fieldSet: self.fieldSet,
+                                defaultValue: '',
+                                regEx: /^\d+\s?.+$/,
+                                filter: titleCase.convert,
+                                helpText: 'Entrez l\'adresse de votre client.',
+                                errorText: 'Entrez une adresse valide.'
+                            }),
+                            m('.columns', [
+                                m('.column', [
+                                    m(InputField, {
+                                        name: 'custcity',
+                                        label: 'Ville du client',
+                                        fieldSet: self.fieldSet,
+                                        defaultValue: '',
+                                        regEx: /^.+$/,
+                                        filter: titleCase.convert,
+                                        helpText: 'Entrez la ville de votre client.',
+                                        errorText: 'Entrez une ville valide.'
+                                    })
+                                ]),
+                                m('.column', [
+                                    m(SelectField, {
+                                        name: 'custprovince',
+                                        label: 'Province du client',
+                                        fieldSet: self.fieldSet, 
+                                        defaultValue: 'QC',
+                                        helpText: 'Choisissez la province de votre client.',
+                                        fullwidth: true,
+                                        options: [
+                                            {value: 'QC', label: 'Québec'},
+                                            {value: 'ON', label: 'Ontario'},
+                                            {value: 'NB', label: 'Nouveau-Brunswick'},
+                                            {value: 'NS', label: 'Nouvelle-Écosse'},
+                                            {value: 'NL', label: 'Terre-Neuve et Labrador'},
+                                            {value: 'PEI', label: 'Ile du Prince-Édouard'},
+                                            {value: 'MB', label: 'Manitoba'},
+                                            {value: 'SK', label: 'Saskatchewan'},
+                                            {value: 'AB', label: 'Alberta'},
+                                            {value: 'BC', label: 'Colombie-Britannique'}
+                                        ]
+                                    })
+                                ])
+                            ]),
+                            m(InputField, {
+                                name: 'custpostcode',
+                                label: 'Code postal du client',
+                                fieldSet: self.fieldSet,
+                                defaultValue: '',
+                                regEx: /^([ABCEGHJ-NPRSTVXY]{1}\d{1}[A-Z]{1})\s?(\d{1}[A-Z]{1}\d{1})$/i,
+                                filter: function (s, rEx) {
+                                    return s.replace(rEx, '$1 $2').toUpperCase();
+                                },
+                                helpText: 'Entrez le code postal de votre client (ex.: H0H 0H0).',
+                                errorText: 'Entrez un code postal valide (ex.: H0H 0H0).'
+                            }),
+                        ])
+                    ])
+                ])
+            ]),
+            m('section.section.is-small', [
+                m('.container', [
+                    m('h1.title.is-4', '3. Items de votre soumission'),
+                    m('h2.subtitle.is-6', 'Vous pouvez ajouter jusqu\'à 18 items à votre soumission ci-dessous.'),
+                    m('table#quoteitems.table.is-fullwidth.is-narrow', [
+                        m('thead', m('tr', [
+                            m('th', m('abbr', {title: 'Quantité'}, 'Qté')),
+                            m('th', 'UGS'),
+                            m('th', 'Description'),
+                            m('th', m('abbr', {title: 'Prix unitaire'}, 'Prix')),
+                            m('th', 'Rabais'),
+                            m('th', 'Écofrais'),
+                            m('th', 'Total'),
+                            m('th', '')
+                        ])),
+                        m('tbody', self.quoteItems.length > 0 ? self.quoteItems.map(function (o, i) {
+                            return m('tr' + (self.editIndex === i ? '.is-selected' : ''), [
+                                m('td', o.qty),
+                                m('td', o.sku),
+                                m('td', o.desc),
+                                m('td', m.trust(o.price + '&nbsp;$')),
+                                m('td', m.trust((o.rebatetype === '$' ? o.rebatevalue : String((parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100)).toFixed(2))) + '&nbsp;$')),
+                                m('td', m.trust(o.ecofee.length ? o.ecofee + '&nbsp;$' : '-')),
+                                m('td', m.trust((o.rebatetype === '$' ?
+                                String(((parseFloat(o.price) - parseFloat(o.rebatevalue) + (o.ecofee ? parseFloat(o.ecofee) : 0)) * parseInt(o.qty)).toFixed(2)) :
+                                String(((parseFloat(o.price) - (parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100)) + (o.ecofee ? parseFloat(o.ecofee) : 0)) * parseInt(o.qty)).toFixed(2))) + '&nbsp;$')),
+                                m('td', m('a.icon', {onclick: self.setEditItem(i)}, m('i.fa.fa-lg.fa-pencil')))
+                            ])
+                        }) : m('tr', m('td', {colspan: 8}, 'Aucun item à afficher.')))
+                    ]),
+                    m('.card', [
+                        m('header.card-header', m('p.card-header-title', self.editIndex > -1 ? 'Modifier un item' : 'Ajouter un item')),
+                        m('.card-content', [
+                            m('.columns.is-multiline', [
+                                m('.column.is-one-quarter', m(InputField, {
+                                    name: 'qty',
+                                    label: 'Quantité',
+                                    fieldSet: self.quoteFields,
+                                    defaultValue: '1',
+                                    regEx: /^[1-9]\d*$/,
+                                    errorText: 'Entrez une quantité valide (> 0).',
+                                    disabled: self.isLoading
+                                })),
+                                m('.column.is-one-quarter', m(InputField, {
+                                    name: 'sku',
+                                    label: 'UGS',
                                     fieldSet: self.quoteFields,
                                     defaultValue: '',
-                                    fullwidth: true,
-                                    regEx: /^(\d+)?(?:[\,|\.](\d{1,2}))?$/,
+                                    regEx: /^.+$/,
+                                    onChange: self.loadSku,
+                                    errorText: 'Entrez une UGS valide.',
+                                    helpText: self.notFound ? 'Item non trouvé!' : self.isLoading ? 'Chargement de l\'item...' : '',
+                                    icon: self.isLoading ? 'fa fa-cog fa-spin' : 'fa fa-search',
+                                    disabled: self.isLoading
+                                })),
+                                m('.column.is-half', m(InputField, {
+                                    name: 'desc',
+                                    label: 'Description',
+                                    fieldSet: self.quoteFields,
+                                    defaultValue: '',
+                                    regEx: /^.+$/,
+                                    errorText: 'Entrez une description valide.',
+                                    disabled: self.isLoading
+                                })),
+                                m('.column.is-one-quarter', m(InputField, {
+                                    name: 'price',
+                                    label: 'Prix unitaire',
+                                    fieldSet: self.quoteFields,
+                                    defaultValue: '',
+                                    regEx: /^(\d+)(?:[\,|\.](\d{1,2}))?$/,
                                     filter: function (v, r) {
                                         var m = r.exec(v);
-                                        if (!m[1]) return '0.00';
+                                        if (!m[1]) return '';
                                         if (m[2]) {
                                             if (m[2].length == 1) {
                                                 return m[1] + '.' + m[2] + '0';
@@ -819,60 +812,99 @@ NewQuote.view = function () {
                                             return m[1] + '.00';
                                         }
                                     },
-                                    errorText: 'Entrez un rabais valide. (ex.: 25.00)',
+                                    errorText: 'Entrez un prix valide. (ex.: 25.00)',
                                     disabled: self.isLoading
-                                })
-                            ]),
-                            m('.column.is-one-quarter', m(InputField, {
-                                name: 'ecosku',
-                                label: 'Écofrais (UGS)',
-                                fieldSet: self.quoteFields,
-                                defaultValue: '',
-                                regEx: /^\d*$/,
-                                filter: function (v) {
-                                    if (v == '' && self.quoteFields['ecofee'].value != '') {
-                                        return false;
-                                    }
-                                    return v;
-                                },
-                                errorText: 'Entrez une UGS valide.',
-                                disabled: self.isLoading
-                            })),
-                            m('.column.is-one-quarter', m(InputField, {
-                                name: 'ecofee',
-                                label: 'Écofrais (Prix)',
-                                fieldSet: self.quoteFields,
-                                defaultValue: '',
-                                regEx: /^(\d+)?(?:[\,|\.](\d{1,2}))?$/,
-                                filter: function (v, r) {
-                                    if (v == '' && self.quoteFields['ecosku'].value != '') {
-                                        return false;
-                                    }
-                                    var m = r.exec(v);
-                                    if (!m[1]) return '';
-                                    if (m[2]) {
-                                        if (m[2].length == 1) {
-                                            return m[1] + '.' + m[2] + '0';
-                                        } else {
-                                            return m[1] + '.' + m[2];
+                                })),
+                                m('.column.is-one-quarter', [
+                                    m(InputField, {
+                                        manualGrouping: [
+                                            m(SelectField, {
+                                                manualGrouping: true,
+                                                name: 'rebatetype',
+                                                fieldSet: self.quoteFields, 
+                                                defaultValue: '$',
+                                                options: [
+                                                    {value: '$', label: '$'},
+                                                    {value: '%', label: '%'}
+                                                ],
+                                                disabled: self.isLoading
+                                            })
+                                        ],
+                                        name: 'rebatevalue',
+                                        label: 'Rabais',
+                                        fieldSet: self.quoteFields,
+                                        defaultValue: '',
+                                        fullwidth: true,
+                                        regEx: /^(\d+)?(?:[\,|\.](\d{1,2}))?$/,
+                                        filter: function (v, r) {
+                                            var m = r.exec(v);
+                                            if (!m[1]) return '0.00';
+                                            if (m[2]) {
+                                                if (m[2].length == 1) {
+                                                    return m[1] + '.' + m[2] + '0';
+                                                } else {
+                                                    return m[1] + '.' + m[2];
+                                                }
+                                            } else {
+                                                return m[1] + '.00';
+                                            }
+                                        },
+                                        errorText: 'Entrez un rabais valide. (ex.: 25.00)',
+                                        disabled: self.isLoading
+                                    })
+                                ]),
+                                m('.column.is-one-quarter', m(InputField, {
+                                    name: 'ecosku',
+                                    label: 'Écofrais (UGS)',
+                                    fieldSet: self.quoteFields,
+                                    defaultValue: '',
+                                    regEx: /^\d*$/,
+                                    filter: function (v) {
+                                        if (v == '' && self.quoteFields['ecofee'].value != '') {
+                                            return false;
                                         }
-                                    } else {
-                                        return m[1] + '.00';
-                                    }
-                                },
-                                errorText: 'Entrez un prix valide. (ex.: 25.00)',
-                                disabled: self.isLoading
-                            })),
+                                        return v;
+                                    },
+                                    errorText: 'Entrez une UGS valide.',
+                                    disabled: self.isLoading
+                                })),
+                                m('.column.is-one-quarter', m(InputField, {
+                                    name: 'ecofee',
+                                    label: 'Écofrais (Prix)',
+                                    fieldSet: self.quoteFields,
+                                    defaultValue: '',
+                                    regEx: /^(\d+)?(?:[\,|\.](\d{1,2}))?$/,
+                                    filter: function (v, r) {
+                                        if (v == '' && self.quoteFields['ecosku'].value != '') {
+                                            return false;
+                                        }
+                                        var m = r.exec(v);
+                                        if (!m[1]) return '';
+                                        if (m[2]) {
+                                            if (m[2].length == 1) {
+                                                return m[1] + '.' + m[2] + '0';
+                                            } else {
+                                                return m[1] + '.' + m[2];
+                                            }
+                                        } else {
+                                            return m[1] + '.00';
+                                        }
+                                    },
+                                    errorText: 'Entrez un prix valide. (ex.: 25.00)',
+                                    disabled: self.isLoading
+                                })),
+                            ])
+                        ]),
+                        m('footer.card-footer', [
+                            m('button#addbtn.button.is-white.card-footer-item', {onclick: self.addQuoteItem}, self.editIndex > -1 ? 'Sauvegarder' : 'Ajouter'),
+                            self.editIndex > -1 ? m('button#resetbtn.button.is-danger.card-footer-item', {onclick: self.deleteItem}, 'Supprimer') : '',
+                            m('button#resetbtn.button.is-white.card-footer-item', {onclick: self.resetFields}, self.editIndex > -1 ? 'Annuler' : 'Réinitialiser')
                         ])
-                    ]),
-                    m('footer.card-footer', [
-                        m('button#addbtn.button.is-white.card-footer-item', {onclick: self.addQuoteItem}, self.editIndex > -1 ? 'Sauvegarder' : 'Ajouter'),
-                        self.editIndex > -1 ? m('button#resetbtn.button.is-danger.card-footer-item', {onclick: self.deleteItem}, 'Supprimer') : '',
-                        m('button#resetbtn.button.is-white.card-footer-item', {onclick: self.resetFields}, self.editIndex > -1 ? 'Annuler' : 'Réinitialiser')
                     ])
                 ])
             ])
-        ])
+        ]),
+        QuoteFooter('newquote')
     ];
 }
 
@@ -881,13 +913,16 @@ var ImportQuote = {}
 ImportQuote.view = function () {
     return [
         QuoteHeader('importquote'),
-        m('section.section', [
-            m('.container', [
-                m('button.button.is-info', {onclick: function () {
-                    window.open('pdfview.html#' + createPDF());
-                }}, 'Test PDF')
+        m('div.contents', [
+            m('section.section', [
+                m('.container', [
+                    m('button.button.is-info', {onclick: function () {
+                        window.open('pdfview.html#' + createPDF());
+                    }}, 'Test PDF')
+                ])
             ])
-        ])
+        ]),
+        QuoteFooter('importquote')
     ];
 }
 
@@ -920,105 +955,108 @@ Settings.view = function () {
     var self = this;
     return [
         QuoteHeader('settings'),
-        m('section.section', [
-            m('.container', [
-                m('h1.title', 'Réglages'),
-                m('h2.subtitle', 'Voici quelques réglages nécessaires à l\'opération du programme. SVP remplir tous les champs avant de continuer.'),
-                m('.columns', [
-                    m('.column', [
-                        m(InputField, {
-                            name: 'storeno',
-                            label: 'Numéro de magasin',
-                            fieldSet: self.fieldSet,
-                            defaultValue: SettingsData.storeno,
-                            regEx: /^[1-9]{1}\d{0,2}$/,
-                            errorText: 'Entrez un numéro de magasin valide.',
-                            autofocus: true
-                        }),
-                        m(InputField, {
-                            name: 'storeaddr',
-                            label: 'Adresse du magasin',
-                            fieldSet: self.fieldSet,
-                            defaultValue: SettingsData.storeaddr,
-                            regEx: /^\d+\s?.+$/,
-                            filter: titleCase.convert,
-                            errorText: 'Entrez l\'adresse du magasin.'
-                        }),
-                        m(InputField, {
-                            name: 'storecity',
-                            label: 'Ville du magasin',
-                            fieldSet: self.fieldSet,
-                            defaultValue: SettingsData.storecity,
-                            regEx: /^.+$/,
-                            filter: titleCase.convert,
-                            errorText: 'Entrez la ville du magasin.'
-                        }),
-                        m(InputField, {
-                            name: 'storepostcode',
-                            label: 'Code postal du magasin',
-                            fieldSet: self.fieldSet,
-                            defaultValue: SettingsData.storepostcode,
-                            regEx: /^([ABCEGHJ-NPRSTVXY]{1}\d{1}[A-Z]{1})\s?(\d{1}[A-Z]{1}\d{1})$/i,
-                            filter: function (s, rEx) {
-                                return s.replace(rEx, '$1 $2').toUpperCase();
-                            },
-                            errorText: 'Entrez un code postal valide (ex.: H0H 0H0).'
-                        }),
-                        m(InputField, {
-                            name: 'storephone',
-                            label: 'Numéro de téléphone du magasin',
-                            fieldSet: self.fieldSet,
-                            defaultValue: SettingsData.storephone,
-                            regEx: /^[(]?(\d{3})[)]?\s?-?\s?(\d{3})\s?-?\s?(\d{4})$/,
-                            filter: '($1) $2-$3',
-                            errorText: 'Entrez un numéro de téléphone valide (ex.: (555) 555-2345).'
-                        }),
+        m('div.contents', [
+            m('section.section', [
+                m('.container', [
+                    m('h1.title', 'Réglages'),
+                    m('h2.subtitle', 'Voici quelques réglages nécessaires à l\'opération du programme. SVP remplir tous les champs avant de continuer.'),
+                    m('.columns', [
+                        m('.column', [
+                            m(InputField, {
+                                name: 'storeno',
+                                label: 'Numéro de magasin',
+                                fieldSet: self.fieldSet,
+                                defaultValue: SettingsData.storeno,
+                                regEx: /^[1-9]{1}\d{0,2}$/,
+                                errorText: 'Entrez un numéro de magasin valide.',
+                                autofocus: true
+                            }),
+                            m(InputField, {
+                                name: 'storeaddr',
+                                label: 'Adresse du magasin',
+                                fieldSet: self.fieldSet,
+                                defaultValue: SettingsData.storeaddr,
+                                regEx: /^\d+\s?.+$/,
+                                filter: titleCase.convert,
+                                errorText: 'Entrez l\'adresse du magasin.'
+                            }),
+                            m(InputField, {
+                                name: 'storecity',
+                                label: 'Ville du magasin',
+                                fieldSet: self.fieldSet,
+                                defaultValue: SettingsData.storecity,
+                                regEx: /^.+$/,
+                                filter: titleCase.convert,
+                                errorText: 'Entrez la ville du magasin.'
+                            }),
+                            m(InputField, {
+                                name: 'storepostcode',
+                                label: 'Code postal du magasin',
+                                fieldSet: self.fieldSet,
+                                defaultValue: SettingsData.storepostcode,
+                                regEx: /^([ABCEGHJ-NPRSTVXY]{1}\d{1}[A-Z]{1})\s?(\d{1}[A-Z]{1}\d{1})$/i,
+                                filter: function (s, rEx) {
+                                    return s.replace(rEx, '$1 $2').toUpperCase();
+                                },
+                                errorText: 'Entrez un code postal valide (ex.: H0H 0H0).'
+                            }),
+                            m(InputField, {
+                                name: 'storephone',
+                                label: 'Numéro de téléphone du magasin',
+                                fieldSet: self.fieldSet,
+                                defaultValue: SettingsData.storephone,
+                                regEx: /^[(]?(\d{3})[)]?\s?-?\s?(\d{3})\s?-?\s?(\d{4})$/,
+                                filter: '($1) $2-$3',
+                                errorText: 'Entrez un numéro de téléphone valide (ex.: (555) 555-2345).'
+                            }),
+                        ]),
+                        m('.column', [
+                            m(InputField, {
+                                name: 'tvq',
+                                label: 'Taxe de Vente du Québec (%)',
+                                fieldSet: self.fieldSet,
+                                defaultValue: SettingsData.tvq,
+                                regEx: /^\d+(\.\d+)?$/,
+                                errorText: 'Entrez un pourcentage de taxe valide (ex.: 9.9975).'
+                            }),
+                            m(InputField, {
+                                name: 'tps',
+                                label: 'Taxe des Produits et Services (%)',
+                                fieldSet: self.fieldSet,
+                                defaultValue: SettingsData.tps,
+                                regEx: /^\d+(\.\d+)?$/,
+                                errorText: 'Entrez un pourcentage de taxe valide (ex.: 5.0).'
+                            }),
+                            m(InputField, {
+                                name: 'bdcoup',
+                                label: 'Code de bon pour le développement des affaires',
+                                fieldSet: self.fieldSet,
+                                defaultValue: SettingsData.bdcoup,
+                                regEx: /^\d{5}$/,
+                                errorText: 'Entrez un code de bon valide (ex.: 12345).'
+                            })/*,
+                            m(SelectField, {
+                                name: 'ecosetting',
+                                label: 'Options d\'affichage des écofrais',
+                                fieldSet: self.fieldSet, 
+                                defaultValue: SettingsData.ecosetting,
+                                helpText: "Vous pouvez afficher les écofrais dans votre soumission de deux façons: si vous choisissez d'inclure les écofrais dans le prix de l'item, un astérisque sera placé à côté du prix avec une note indiquant que les écofrais ont été incorporés. Si vous désirez avoir les écofrais sur leur propre ligne à la place, ils seront placés directement sous l'item. Notez par contre qu'une soumission ne peut avoir qu'un maximum de 18 lignes: une soumission d'articles technologiques risque de se remplir rapidement!",
+                                fullwidth: true,
+                                options: [
+                                    {value: EcoSetting.INCLUDE, label: 'Inclure les écofrais dans le prix de l\'item'},
+                                    {value: EcoSetting.INSERT, label: 'Ajouter les écofrais sur leur propre ligne de soumission'}
+                                ]
+                            })*/
+                        ])
                     ]),
-                    m('.column', [
-                        m(InputField, {
-                            name: 'tvq',
-                            label: 'Taxe de Vente du Québec (%)',
-                            fieldSet: self.fieldSet,
-                            defaultValue: SettingsData.tvq,
-                            regEx: /^\d+(\.\d+)?$/,
-                            errorText: 'Entrez un pourcentage de taxe valide (ex.: 9.9975).'
-                        }),
-                        m(InputField, {
-                            name: 'tps',
-                            label: 'Taxe des Produits et Services (%)',
-                            fieldSet: self.fieldSet,
-                            defaultValue: SettingsData.tps,
-                            regEx: /^\d+(\.\d+)?$/,
-                            errorText: 'Entrez un pourcentage de taxe valide (ex.: 5.0).'
-                        }),
-                        m(InputField, {
-                            name: 'bdcoup',
-                            label: 'Code de bon pour le développement des affaires',
-                            fieldSet: self.fieldSet,
-                            defaultValue: SettingsData.bdcoup,
-                            regEx: /^\d{5}$/,
-                            errorText: 'Entrez un code de bon valide (ex.: 12345).'
-                        })/*,
-                        m(SelectField, {
-                            name: 'ecosetting',
-                            label: 'Options d\'affichage des écofrais',
-                            fieldSet: self.fieldSet, 
-                            defaultValue: SettingsData.ecosetting,
-                            helpText: "Vous pouvez afficher les écofrais dans votre soumission de deux façons: si vous choisissez d'inclure les écofrais dans le prix de l'item, un astérisque sera placé à côté du prix avec une note indiquant que les écofrais ont été incorporés. Si vous désirez avoir les écofrais sur leur propre ligne à la place, ils seront placés directement sous l'item. Notez par contre qu'une soumission ne peut avoir qu'un maximum de 18 lignes: une soumission d'articles technologiques risque de se remplir rapidement!",
-                            fullwidth: true,
-                            options: [
-                                {value: EcoSetting.INCLUDE, label: 'Inclure les écofrais dans le prix de l\'item'},
-                                {value: EcoSetting.INSERT, label: 'Ajouter les écofrais sur leur propre ligne de soumission'}
-                            ]
-                        })*/
+                    m('.field.is-grouped.notification', [
+                        m('.control', m('button.button.is-primary', {onclick: self.save}, 'Sauvegarder')),
+                        m('.control', m('a.button[href="/"]', {oncreate: m.route.link}, 'Annuler'))
                     ])
-                ]),
-                m('.field.is-grouped.notification', [
-                    m('.control', m('button.button.is-primary', {onclick: self.save}, 'Sauvegarder')),
-                    m('.control', m('a.button[href="/"]', {oncreate: m.route.link}, 'Annuler'))
                 ])
             ])
-        ])
+        ]),
+        QuoteFooter('settings')
     ];
 }
 

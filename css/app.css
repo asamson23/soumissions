@@ -3,6 +3,16 @@ body {
     cursor: default;
 }
 
+#approot {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+}
+
+.contents {
+    flex: 1;
+}
+
 .browser-logo {
     width: 128px;
 }
@@ -25,10 +35,47 @@ body {
     border-right: 1px solid #dbdbdb;
 }
 
-@media (max-width: 800px) {
+footer .tabs a {
+    flex-direction: column;
+}
+
+footer .tabs .icon:first-child {
+    margin-right: 0;
+}
+
+footer .tabs:not(:last-child) {
+    margin-bottom: 0;
+}
+
+.footer {
+    padding: 2rem 1.5rem 3rem;
+}
+
+@media (min-width: 769px) {
+    .title.is-1-tablet {
+        font-size: 3rem;
+    }
+    .subtitle.is-3-tablet {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
     #quoteitems th:nth-child(3),
     #quoteitems td:nth-child(3) {
         display: none;
+    }
+    .footer {
+        padding: 0.5rem;
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        z-index: 500;
+    }
+
+    .contents {
+        padding-bottom: 80px;
     }
 }
 
