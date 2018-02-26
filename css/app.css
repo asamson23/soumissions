@@ -83,9 +83,7 @@ footer .tabs:not(:last-child) {
     #quoteitems th:nth-child(3),
     #quoteitems td:nth-child(3),
     #quoteitems th:nth-child(5),
-    #quoteitems td:nth-child(5),
-    #quoteitems th:nth-child(6),
-    #quoteitems td:nth-child(6) {
+    #quoteitems td:nth-child(5) {
         display: none;
     }
 }
