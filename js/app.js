@@ -37,7 +37,7 @@ var validateFieldSet = function (fieldSet) {
 }
 
 var SettingsData = {
-    tvq: 9.9975,
+    tvq: 9.975,
     tps: 5.0,
     storeno: '',
     storeaddr: '',
@@ -110,6 +110,8 @@ var QuoteData = {
         var quote = localStorage.getItem(quoteID);
         if (quote) {
             this.openquote = JSON.parse(quote);
+            this.openquote.date = new Date(this.openquote.date);
+            this.openquote.expires = new Date(this.openquote.expires);
             return true;
         } else {
             this.openquote = {};
@@ -164,11 +166,7 @@ var QuoteData = {
                 phone: '',
                 email: ''
             },
-            items: {
-                header: ['Qté', 'No d\'UGS', 'Description', 'Prix Unitaire', 'Prix Total'],
-                rows: []
-            },
-            comments: '',
+            items: [],
             notes: '',
             status: QuoteStatus.NEW
         }
@@ -184,7 +182,7 @@ var QuoteData = {
 }
 QuoteData.loadQuotes();
 
-var QuoteHeader = function (activeTab) {
+var QuoteHeader = function (activeTab, quoteid) {
     return m('header.hero.is-info.is-bold', [
         m('.hero-body', m('.container', [
             m('h1.title.is-1-tablet', 'Soumissions par J-F Desrochers'),
@@ -197,6 +195,7 @@ var QuoteHeader = function (activeTab) {
             ])),
             m('li' + (activeTab == 'newquote' ? '.is-active' : ''), m('a[href="/new"]', {oncreate: m.route.link}, [
                 m('span.icon.is-small', m('i.fa.fa-pencil-square-o')),
+                (activeTab == 'newquote' && quoteid) ? m('span', 'Modifier la soumission ' + quoteid) :
                 m('span', 'Créer une nouvelle soumission')
             ])),
             m('li' + (activeTab == 'importquote' ? '.is-active' : ''), m('a[href="/load"]', {oncreate: m.route.link}, [
@@ -211,7 +210,7 @@ var QuoteHeader = function (activeTab) {
     ]);
 }
 
-var QuoteFooter = function (activeTab) {
+var QuoteFooter = function (activeTab, quoteid) {
     return m('footer.footer', [
         m('.container', [
             m('nav.tabs.is-fullwidth.is-hidden-tablet', m('ul', [
@@ -221,7 +220,7 @@ var QuoteFooter = function (activeTab) {
                 ])),
                 m('li' + (activeTab == 'newquote' ? '.is-active' : ''), m('a[href="/new"]', {oncreate: m.route.link}, [
                     m('span.icon.is-small', m('i.fa.fa-lg.fa-pencil-square-o')),
-                    m('span', 'Nouvelle')
+                    (activeTab == 'newquote' && quoteid) ? m('span', 'Modifier') : m('span', 'Nouvelle')
                 ])),
                 m('li' + (activeTab == 'importquote' ? '.is-active' : ''), m('a[href="/load"]', {oncreate: m.route.link}, [
                     m('span.icon.is-small', m('i.fa.fa-lg.fa-upload')),
@@ -432,23 +431,32 @@ QuoteList.view = function () {
 
 var NewQuote = {}
 
-NewQuote.oninit = function () {
+NewQuote.oninit = function (vnode) {
     var self = this;
     self.fieldSet = {};
     self.quoteFields = {};
     self.quoteItems = [];
-    self.quote = QuoteData.newQuote();
+    self.quotelen = 0;
+    self.quoteid = vnode.attrs.key || null
+    if (self.quoteid && QuoteData.loadQuote(self.quoteid)) {
+        self.quote = QuoteData.openquote;
+        self.quoteItems = [].concat(self.quote.items);
+        self.quotelen = self.quoteItems.length;
+    } else {
+        self.quote = QuoteData.newQuote();
+    }
     self.isLoading = false;
     self.notFound = false;
     self.editIndex = -1;
-    self.quotelen = 0;
+    self.viewerror = '';
 
     self.loadSku = function (e, field) {
         if (field.value !== '') {
             resetValidation(self.quoteFields);
             self.isLoading = true;
             self.notFound = false;
-            m.request('https://hook.io/jfdesrochers/splslookup/' + field.value).then(function (value) {
+            var postcode = SettingsData.storepostcode.replace(' ', '');
+            m.request('https://hook.io/jfdesrochers/splslookup/' + field.value + '/' + postcode).then(function (value) {
                 self.quoteFields['desc'].value = value.description;
                 self.quoteFields['price'].value = value.listPrice;
                 self.quoteFields['rebatevalue'].value = value.savings || 0;
@@ -463,7 +471,6 @@ NewQuote.oninit = function () {
                 self.notFound = true;
                 setTimeout(function () {
                     self.notFound = false;
-                    m.redraw();
                 }, 2000);
                 var dsc = document.getElementById('desc');
                 if (dsc) {
@@ -473,6 +480,33 @@ NewQuote.oninit = function () {
                 console.error(err);
             })
         }
+    }
+
+    self.lookupAssociate = function (e, field) {
+        if (field.value !== '') {
+            var assname = localStorage.getItem(field.value);
+            if (assname) {
+                self.fieldSet['assname'].value = assname;
+                var qd = document.getElementById('quotedate');
+                qd && qd.focus();
+            }
+        }
+        self.saveFields({saveAssociate: true})();
+    }
+
+    self.lookupCustomer = function (e, field) {
+        if (field.value !== '') {
+            var custdata = localStorage.getItem(field.value.replace(/\D/g, ''));
+            if (custdata) {
+                custdata = JSON.parse(custdata);
+                for (var i in custdata) {
+                    self.fieldSet[i].value = custdata[i];
+                }
+                var qt = document.getElementById('qty');
+                qt && qt.focus();
+            }
+        }
+        self.saveFields({saveCustomer: true})();
     }
 
     self.setEditItem = function (idx) {
@@ -496,6 +530,7 @@ NewQuote.oninit = function () {
                 self.quoteItems.push(serializeFieldSet(self.quoteFields));
                 self.quotelen += 1;
             }
+            self.saveFields()();
             self.resetFields(e);
         }
     }
@@ -504,6 +539,7 @@ NewQuote.oninit = function () {
         if (self.editIndex > -1) {
             self.quoteItems.splice(self.editIndex, 1);
             self.quotelen -= 1;
+            self.saveFields()();
             self.resetFields(e);
         }
     }
@@ -523,38 +559,96 @@ NewQuote.oninit = function () {
         }
     }
 
-    self.saveFields = function () {
-        var f = serializeFieldSet(self.fieldSet);
-        QuoteData.openquote.associate.name = f.assname;
-        QuoteData.openquote.associate.number = f.assno;
-        QuoteData.openquote.customer.name = f.custname;
-        QuoteData.openquote.customer.company = f.custbusiness;
-        QuoteData.openquote.customer.addr = f.custaddr;
-        QuoteData.openquote.customer.city = f.custcity;
-        QuoteData.openquote.customer.province = f.custprovince;
-        QuoteData.openquote.customer.postcode = f.custpostcode;
-        QuoteData.openquote.customer.phone = f.custphone;
-        QuoteData.openquote.customer.email = f.custemail;
-        QuoteData.openquote.items.rows = self.quoteItems.map(function (o) {
-            var price = (o.rebatetype === '$' ?
-            (parseFloat(o.price) - parseFloat(o.rebatevalue)).toFixed(2) :
-            (parseFloat(o.price) - (parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100))).toFixed(2));
-            return [o.qty, o.sku, o.desc, String(price) + '&nbsp;$', String((price * parseInt(o.qty)).toFixed(2)) + '&nbsp;$'];
-        });
-        QuoteData.saveQuote();
+    self.saveFields = function (options) {
+        options = options || {};
+        return function() {
+            var f = serializeFieldSet(self.fieldSet);
+            self.quote.associate.name = f.assname;
+            self.quote.associate.number = f.assno;
+            self.quote.customer.name = f.custname;
+            self.quote.customer.company = f.custbusiness;
+            self.quote.customer.addr = f.custaddr;
+            self.quote.customer.city = f.custcity;
+            self.quote.customer.province = f.custprovince;
+            self.quote.customer.postcode = f.custpostcode;
+            self.quote.customer.phone = f.custphone;
+            self.quote.customer.email = f.custemail;
+            /* self.quote.items.header = ['Qté', 'No d\'UGS', 'Description', 'Prix Unitaire', 'Prix Total'];
+            self.quote.items.rows = self.quoteItems.map(function (o) {
+                var price = (o.rebatetype === '$' ?
+                (parseFloat(o.price) - parseFloat(o.rebatevalue)).toFixed(2) :
+                (parseFloat(o.price) - (parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100))).toFixed(2));
+                return [o.qty, o.sku, o.desc, String(price) + '&nbsp;$', String((price * parseInt(o.qty)).toFixed(2)) + '&nbsp;$'];
+            }); */
+            self.quote.items = [].concat(self.quoteItems);
+            self.quote.notes = f.quotenotes;
+            QuoteData.saveQuote();
+            if (options.saveAssociate && f.assname !== '' && f.assno !== '') {
+                localStorage.setItem(f.assno, f.assname);
+            }
+            if (options.saveCustomer && f.custname !== '' && f.custbusiness !== '' && f.custaddr !== '' && f.custcity !== '' && f.custprovince !== '' && f.custpostcode !== '' && f.custphone !== '' && f.custemail !== '') {
+                var phone = f.custphone.replace(/\D/g, '');
+                localStorage.setItem(phone, JSON.stringify({
+                    custname: f.custname,
+                    custbusiness: f.custbusiness,
+                    custaddr: f.custaddr,
+                    custcity: f.custcity,
+                    custprovince: f.custprovince,
+                    custpostcode: f.custpostcode,
+                    custphone: f.custphone,
+                    custemail: f.custemail
+                }));
+            }
+        }
+    }
+
+    self.viewquote = function () {
+        var valid = validateFieldSet(self.fieldSet);
+        self.viewerror = '';
+        if (valid) {
+            if (self.quotelen > 0 && self.quotelen <= 18) {
+                var quoteview = Object.assign({}, self.quote)
+                quoteview.items = {};
+                quoteview.items.header = ['Qté', 'No d\'UGS', 'Description', 'Prix Unitaire', 'Prix Total'];
+                var subtotal = 0;
+                quoteview.items.rows = self.quoteItems.map(function (o) {
+                    var price = (o.rebatetype === '$' ?
+                    (parseFloat(o.price) - parseFloat(o.rebatevalue)) :
+                    (parseFloat(o.price) - (parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100))));
+                    var total = (price * parseInt(o.qty));
+                    subtotal += total;
+                    return [o.qty, o.sku, o.desc, String(price.toFixed(2)) + ' $', String(total.toFixed(2)) + ' $'];
+                });
+                var rowtotal = 18 - self.quotelen;
+                for (var i=0; i<rowtotal; i++) {
+                    quoteview.items.rows.push(['','','','','']);
+                };
+                var tps = (subtotal * SettingsData.tps / 100);
+                var tvq = (subtotal * SettingsData.tvq / 100);
+                quoteview.items.rows.push(['', '', '', 'Total partiel', String(subtotal.toFixed(2)) + ' $']);
+                quoteview.items.rows.push(['', '', '', 'TPS', String(tps.toFixed(2)) + ' $']);
+                quoteview.items.rows.push(['', '', '', 'TVQ', String(tvq.toFixed(2)) + ' $']);
+                quoteview.items.rows.push(['', '', 'Ceci n\'est pas une facture', 'Total', String((subtotal + tps + tvq).toFixed(2)) + ' $']);
+                window.open('pdfview.html#' + createPDF(quoteview));
+            } else {
+                self.viewerror = 'Votre devis doit contenir un minimum de 1 et un maximum de 18 items!'
+            }
+        } else {
+            self.viewerror = 'Certains de vos champs contiennent des valeurs invalides! Assurez-vous de bien remplir tous les champs avant de continuer!'
+        }
     }
 }
 
 NewQuote.view = function () {
     var self = this;
     return [
-        QuoteHeader('newquote'),
+        QuoteHeader('newquote', self.quoteid),
         m('div.contents', [
             m('section.section', [
                 m('.container', [
                     m('.columns', [
                         m('.column', [
-                            m('h1.title', 'Créer une nouvelle soumission'),
+                            m('h1.title', self.quoteid ? 'Modifier la soumission' : 'Créer une nouvelle soumission'),
                             m('h2.subtitle', 'Veuillez remplir les champs de cette page. La soumission sera sauvegardée automatiquement.'),
                         ]),
                         m('.column.is-3.notification', [
@@ -580,23 +674,23 @@ NewQuote.view = function () {
                                 name: 'assno',
                                 label: 'Votre numéro d\'associé',
                                 fieldSet: self.fieldSet,
-                                defaultValue: '',
+                                defaultValue: self.quote.associate.number,
                                 regEx: /^\d{7}$/,
                                 helpText: 'Entrez votre numéro d\'associé. (ex.: 1234567 ou 0004567)',
                                 errorText: 'Entrez un numéro d\'associé valide. (ex.: 1234567 ou 0004567)',
                                 autofocus: true,
-                                onChange: self.saveFields
+                                onChange: self.lookupAssociate
                             }),
                             m(InputField, {
                                 name: 'assname',
                                 label: 'Votre nom',
                                 fieldSet: self.fieldSet,
-                                defaultValue: '',
+                                defaultValue: self.quote.associate.name,
                                 regEx: /^.+$/,
                                 filter: titleCase.convert,
                                 helpText: 'Entrez votre nom complet (prénom et nom)',
                                 errorText: 'Entrez un nom valide.',
-                                onChange: self.saveFields
+                                onChange: self.saveFields({saveAssociate: true})
                             })
                         ]),
                         m('.column', [
@@ -612,7 +706,7 @@ NewQuote.view = function () {
                                 },
                                 helpText: '(jj/mm/aaaa)',
                                 errorText: 'Entrez une date valide (jj/mm/aaaa).',
-                                onChange: self.saveFields
+                                onChange: self.saveFields()
                             }),
                             m(InputField, {
                                 name: 'quoteexpires',
@@ -629,7 +723,7 @@ NewQuote.view = function () {
                                 },
                                 helpText: '(jj/mm/aaaa)',
                                 errorText: 'Entrez une date valide (jj/mm/aaaa). La date doit être supérieure à la date de soumission.',
-                                onChange: self.saveFields
+                                onChange: self.saveFields()
                             })
                         ])
                     ])
@@ -647,12 +741,12 @@ NewQuote.view = function () {
                                         name: 'custphone',
                                         label: 'Numéro de téléphone du client',
                                         fieldSet: self.fieldSet,
-                                        defaultValue: '',
+                                        defaultValue: self.quote.customer.phone,
                                         regEx: /^[(]?(\d{3})[)]?\s?-?\s?(\d{3})\s?-?\s?(\d{4})$/,
                                         filter: '($1) $2-$3',
                                         helpText: 'Entrez le numéro de téléphone de votre client.',
                                         errorText: 'Entrez un numéro de téléphone valide. (ex.: (555) 555-2345)',
-                                        onChange: self.saveFields
+                                        onChange: self.lookupCustomer
                                     })
                                 ]),
                                 m('.column', [
@@ -660,11 +754,11 @@ NewQuote.view = function () {
                                         name: 'custemail',
                                         label: 'Adresse courriel du client',
                                         fieldSet: self.fieldSet,
-                                        defaultValue: '',
+                                        defaultValue: self.quote.customer.email,
                                         regEx: /^([A-Z|a-z|0-9](\.|_){0,1})+[A-Z|a-z|0-9]\@([A-Z|a-z|0-9])+((\.){0,1}[A-Z|a-z|0-9]){2}\.[a-z]{2,3}$/,
                                         helpText: 'Entrez l\'adresse courriel de votre client.',
                                         errorText: 'Entrez une adresse courriel valide. (ex.: nom@entreprise.com)',
-                                        onChange: self.saveFields
+                                        onChange: self.saveFields({saveCustomer: true})
                                     })
                                 ]),
                             ]),
@@ -672,18 +766,18 @@ NewQuote.view = function () {
                                 name: 'custname',
                                 label: 'Nom de la personne-ressource',
                                 fieldSet: self.fieldSet,
-                                defaultValue: '',
+                                defaultValue: self.quote.customer.name,
                                 regEx: /^.+$/,
                                 filter: titleCase.convert,
                                 helpText: 'Entrez le nom complet (prénom et nom)',
                                 errorText: 'Entrez un nom valide.',
-                                onChange: self.saveFields
+                                onChange: self.saveFields({saveCustomer: true})
                             }),
                             m(InputField, {
                                 name: 'custbusiness',
                                 label: 'Nom de l\'entreprise',
                                 fieldSet: self.fieldSet,
-                                defaultValue: '',
+                                defaultValue: self.quote.customer.company,
                                 regEx: /^.+$/,
                                 filter: function (s) {
                                     if (/[A-Z]+/.test(s)) {
@@ -694,7 +788,7 @@ NewQuote.view = function () {
                                 },
                                 helpText: 'Entrez le nom de l\'entreprise.',
                                 errorText: 'Entrez un nom valide.',
-                                onChange: self.saveFields
+                                onChange: self.saveFields({saveCustomer: true})
                             })
                         ]),
                         m('.column', [
@@ -702,12 +796,12 @@ NewQuote.view = function () {
                                 name: 'custaddr',
                                 label: 'Adresse du client',
                                 fieldSet: self.fieldSet,
-                                defaultValue: '',
+                                defaultValue: self.quote.customer.addr,
                                 regEx: /^\d+\s?.+$/,
                                 filter: titleCase.convert,
                                 helpText: 'Entrez l\'adresse de votre client.',
                                 errorText: 'Entrez une adresse valide.',
-                                onChange: self.saveFields
+                                onChange: self.saveFields({saveCustomer: true})
                             }),
                             m('.columns', [
                                 m('.column', [
@@ -715,12 +809,12 @@ NewQuote.view = function () {
                                         name: 'custcity',
                                         label: 'Ville du client',
                                         fieldSet: self.fieldSet,
-                                        defaultValue: '',
+                                        defaultValue: self.quote.customer.city,
                                         regEx: /^.+$/,
                                         filter: titleCase.convert,
                                         helpText: 'Entrez la ville de votre client.',
                                         errorText: 'Entrez une ville valide.',
-                                        onChange: self.saveFields
+                                        onChange: self.saveFields({saveCustomer: true})
                                     })
                                 ]),
                                 m('.column', [
@@ -728,7 +822,7 @@ NewQuote.view = function () {
                                         name: 'custprovince',
                                         label: 'Province du client',
                                         fieldSet: self.fieldSet, 
-                                        defaultValue: 'QC',
+                                        defaultValue: self.quote.customer.province || 'QC',
                                         helpText: 'Choisissez la province de votre client.',
                                         fullwidth: true,
                                         options: [
@@ -743,7 +837,7 @@ NewQuote.view = function () {
                                             {value: 'AB', label: 'Alberta'},
                                             {value: 'BC', label: 'Colombie-Britannique'}
                                         ],
-                                        onChange: self.saveFields
+                                        onChange: self.saveFields({saveCustomer: true})
                                     })
                                 ])
                             ]),
@@ -751,14 +845,14 @@ NewQuote.view = function () {
                                 name: 'custpostcode',
                                 label: 'Code postal du client',
                                 fieldSet: self.fieldSet,
-                                defaultValue: '',
+                                defaultValue: self.quote.customer.postcode,
                                 regEx: /^([ABCEGHJ-NPRSTVXY]{1}\d{1}[A-Z]{1})\s?(\d{1}[A-Z]{1}\d{1})$/i,
                                 filter: function (s, rEx) {
                                     return s.replace(rEx, '$1 $2').toUpperCase();
                                 },
                                 helpText: 'Entrez le code postal de votre client (ex.: H0H 0H0).',
                                 errorText: 'Entrez un code postal valide (ex.: H0H 0H0).',
-                                onChange: self.saveFields
+                                onChange: self.saveFields({saveCustomer: true})
                             }),
                         ])
                     ])
@@ -896,9 +990,32 @@ NewQuote.view = function () {
                         ])
                     ])
                 ])
+            ]),
+            m('section.section.is-small', [
+                m('.container', [
+                    m('h1.title.is-4', '4. Notes sur la soumission'),
+                    m('h2.subtitle.is-6', 'Si vous le désirez, vous pouvez inclure des notes dans votre devis.'),
+                    m(InputField, {
+                        name: 'quotenotes',
+                        label: 'Notes (optionnel)',
+                        fieldSet: self.fieldSet,
+                        defaultValue: self.quote.notes,
+                        regEx: /^.*$/i,
+                        onChange: self.saveFields()
+                    })
+                ])
+            ]),
+            m('section.section.is-not-spaced-top', [
+                m('.container.notification', [
+                    self.viewerror ? m('.notification.is-danger', self.viewerror) : '',
+                    m('.field.is-grouped', [
+                        m('.control', m('button.button.is-primary', {onclick: self.viewquote}, 'Visualiser la soumission')),
+                        m('.control', m('a.button[href="/"]', {oncreate: m.route.link}, 'Sauvegarder et Fermer'))
+                    ])
+                ])
             ])
         ]),
-        QuoteFooter('newquote')
+        QuoteFooter('newquote', self.quoteid)
     ];
 }
 
@@ -1120,6 +1237,7 @@ if (version && version < 10) {
     m.route(document.getElementById('approot'), '/', {
         '/': ifSettings(QuoteList),
         '/new': ifSettings(NewQuote),
+        '/edit/:key': ifSettings(NewQuote),
         '/load': ifSettings(ImportQuote),
         '/settings': Settings
     });

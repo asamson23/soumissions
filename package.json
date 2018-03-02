@@ -1,0 +1,23 @@
+{
+  "name": "soumission",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "browser-sync start -s . -f ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jfdesrochers/soumissions.git"
+  },
+  "author": "Jean-Francois Desrochers",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jfdesrochers/soumissions/issues"
+  },
+  "homepage": "https://github.com/jfdesrochers/soumissions#readme",
+  "devDependencies": {
+    "browser-sync": "^2.23.6"
+  }
+}

@@ -21,6 +21,10 @@ body {
     padding: 1.5rem;
 }
 
+.section.is-not-spaced-top {
+    padding: 0 1.5rem 1.5rem;
+}
+
 .field > .field {
     margin-bottom: 0;
 }

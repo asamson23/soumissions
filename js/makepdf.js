@@ -75,58 +75,7 @@ var pageWidth = 612,
     lineHeight = 1.15,
     fontSize = 10;
 
-var data = {
-    id: '13917113001',
-    associate: {
-        number: '1256614',
-        name: 'Jean-François Desrochers'
-    },
-    store: {
-        no: '139',
-        addr: '565 Boul. St-Joseph',
-        city: 'Drummondville, QC',
-        postcode: 'J2C 2B6',
-        phone: '(819) 474-3147'
-    },
-    customer: {
-        name: 'Nicole Gagnon',
-        company: 'Cégep de Drummondville',
-        addr: '960 rue St-Georges',
-        city: 'Drummondville, QC',
-        postcode: 'J2C 6A2',
-        phone: '(819) 478-4671'
-    },
-    items: {
-        header: ['Qté', 'No d\'UGS', 'Description', 'Prix Unitaire', 'Prix Total'],
-        rows: [
-            [1, '19117388', '*iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', '*iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', '*iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            [1, '19117388', 'iPad Mini 4', '529.00 $', '529.00 $'],
-            ['', '', '*Les montants indiqués incluent les écofrais.', 'Total partiel', '566.08 $'],
-            ['', '', '', 'TPS', '28.30 $'],
-            ['', '', '', 'TVQ', '56.47 $'],
-            ['', '', 'Ceci n\'est pas une facture', 'Total', '650.86 $']
-        ]
-    },
-    comments: ""
-}
-
-var createPDF = function () {
+var createPDF = function (data) {
     var doc = new jsPDF({
         orientation: 'portrait',
         unit: 'pt',
@@ -281,7 +230,7 @@ var createPDF = function () {
     y += 2.5;
     fontSize = 8;
     doc.setFontSize(fontSize);
-    var splitText = doc.splitTextToSize(data.comments, pageWidth - margin * 2 - 5);
+    var splitText = doc.splitTextToSize(data.notes, pageWidth - margin * 2 - 5);
     doc.textEx(splitText, margin + 2.5, y);
     y += (splitText.length + Math.max(0, 5 - splitText.length)) * fontSize * lineHeight;
     doc.setDrawColor(0);
