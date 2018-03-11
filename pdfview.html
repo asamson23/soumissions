@@ -57,13 +57,32 @@
 <body>
     <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 50px; background-color: #222222; color: #eeeeee;">
         <a id="backbtn" class="btn" href="./">Retour</a>
-        <a id="downloadbtn" class="btn" download=download target="_blank">Télécharger</a>
+        <a id="downloadbtn" class="btn" href="">Télécharger</a>
     </div>
     <iframe id="pdfdoc" style="position: absolute; top: 50px; left: 0; width: 100vw; height: calc(100vh - 50px); margin: 0; border: none;"></iframe>
+    <script src="vendor/FileSaver.min.js"></script>
     <script>
-        var data = document.location.hash.substr(1)
-        document.getElementById('pdfdoc').src = data;
-        document.getElementById('downloadbtn').href = data;
+        function dataURItoBlob(dataURI) {
+            var byteString = atob(dataURI.split(',')[1]);
+            var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
+            var ab = new ArrayBuffer(byteString.length);
+            var ia = new Uint8Array(ab);
+            for (var i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            var blob = new Blob([ab], {type: mimeString});
+            return blob;
+
+        }
+
+        function doDownload(e) {
+            e.preventDefault();
+            var blob = dataURItoBlob(document.location.hash.substr(1));
+            saveAs(blob);
+        }
+        
+        document.getElementById('pdfdoc').src = document.location.hash.substr(1);
+        document.getElementById('downloadbtn').addEventListener('click', doDownload);
     </script>
 </body>
 </html>

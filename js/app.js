@@ -680,6 +680,9 @@ NewQuote.oninit = function (vnode) {
         } else {
             self.viewerror = 'Certains de vos champs contiennent des valeurs invalides! Assurez-vous de bien remplir tous les champs avant de continuer!'
         }
+        if (self.viewerror !== '') {
+            window.scrollTo(0,document.body.scrollHeight);
+        }
     }
 }
 
@@ -699,7 +702,8 @@ NewQuote.view = function () {
                             m('div.field', [
                                 m('label.label.is-small', 'Numéro du devis'),
                                 m('div.control', m('p.is-small', self.quote.id))
-                            ])
+                            ]),
+                            m('div.field', m('.control', m('button.button.is-primary.is-outlined', {onclick: self.viewquote}, 'Visualiser la soumission')))
                         ])
                     ])
                 ])
