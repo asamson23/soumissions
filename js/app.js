@@ -3,7 +3,7 @@ var _ = window._;
 var titleCase = window.titleCase;
 var createPDF = window.createPDF;
 
-var zFill = function(s) {
+var zFill = window.zFill = function(s) {
     return ('0' + s).slice(-2);
 }
 
@@ -81,13 +81,6 @@ var SettingsData = {
 }
 SettingsData.loaded = SettingsData.loadSettings();
 
-var QuoteStatus = {
-    NEW: 'NEW',
-    ACTIVE: 'ACTIVE',
-    EXPIRED: 'EXPIRED',
-    INACTIVE: 'INACTIVE'
-}
-
 var QuoteData = {
     allquotes: {},
     openquote: {},
@@ -100,6 +93,11 @@ var QuoteData = {
             this.allquotes = {};
             return false;
         }
+    },
+    deleteQuote: function (id) {
+        localStorage.removeItem(id);
+        delete this.allquotes[id];
+        this.saveQuotes();
     },
     saveQuotes: function () {
         var quotes = JSON.stringify(this.allquotes);
@@ -122,7 +120,7 @@ var QuoteData = {
         if (!this.openquote.id) return false;
         var quote = JSON.stringify(this.openquote);
         localStorage.setItem(this.openquote.id, quote);
-        this.allquotes[this.openquote.id] = {status: this.openquote.status, customer: this.openquote.customer.company};
+        this.allquotes[this.openquote.id] = {customer: this.openquote.customer.company};
         this.saveQuotes();
         return true;
     },
@@ -167,8 +165,7 @@ var QuoteData = {
                 email: ''
             },
             items: [],
-            notes: '',
-            status: QuoteStatus.NEW
+            notes: ''
         }
         return this.openquote;
     },
@@ -198,10 +195,6 @@ var QuoteHeader = function (activeTab, quoteid) {
                 (activeTab == 'newquote' && quoteid) ? m('span', 'Modifier la soumission ' + quoteid) :
                 m('span', 'Créer une nouvelle soumission')
             ])),
-            m('li' + (activeTab == 'importquote' ? '.is-active' : ''), m('a[href="/load"]', {oncreate: m.route.link}, [
-                m('span.icon.is-small', m('i.fa.fa-upload')),
-                m('span', 'Charger une/des soumission(s)')
-            ])),
             m('li' + (activeTab == 'settings' ? '.is-active' : ''), m('a[href="/settings"]', {oncreate: m.route.link}, [
                 m('span.icon.is-small', m('i.fa.fa-cog')),
                 m('span', 'Réglages')
@@ -221,10 +214,6 @@ var QuoteFooter = function (activeTab, quoteid) {
                 m('li' + (activeTab == 'newquote' ? '.is-active' : ''), m('a[href="/new"]', {oncreate: m.route.link}, [
                     m('span.icon.is-small', m('i.fa.fa-lg.fa-pencil-square-o')),
                     (activeTab == 'newquote' && quoteid) ? m('span', 'Modifier') : m('span', 'Nouvelle')
-                ])),
-                m('li' + (activeTab == 'importquote' ? '.is-active' : ''), m('a[href="/load"]', {oncreate: m.route.link}, [
-                    m('span.icon.is-small', m('i.fa.fa-lg.fa-upload')),
-                    m('span', 'Charger')
                 ])),
                 m('li' + (activeTab == 'settings' ? '.is-active' : ''), m('a[href="/settings"]', {oncreate: m.route.link}, [
                     m('span.icon.is-small', m('i.fa.fa-lg.fa-cog')),
@@ -415,13 +404,68 @@ var SelectField = {
 
 var QuoteList = {}
 
+QuoteList.oninit = function () {
+    var self = this;
+    self.deleting = '';
+
+    self.edit = function(id) {
+        return function (e) {
+            e.preventDefault();
+            m.route.set('/edit/' + id);
+        }
+    }
+
+    self.delete = function(id)  {
+        return function (e) {
+            e.preventDefault();
+            self.deleting = id;
+        }
+    }
+
+    self.confirmdelete = function(e) {
+        e.preventDefault();
+        QuoteData.deleteQuote(self.deleting);
+        self.deleting = '';
+    }
+
+    self.canceldelete = function(e) {
+        e.preventDefault();
+        self.deleting = '';
+    }
+}
+
 QuoteList.view = function () {
+    var self = this;
     return [
         QuoteHeader('quotelist'),
         m('div.contents', [
             m('section.section', [
                 m('.container', [
-    
+                    m('a.button.is-primary.is-medium.mb-20[href="/new"]', {oncreate: m.route.link}, 'Nouvelle Soumission'),
+                    m('h1.title.is-4', 'Soumissions en cours'),
+                    m('table.table.is-narrow.is-fullwidth', [
+                        m('thead', m('tr', [
+                            m('th', 'No Devis'),
+                            m('th', 'Nom Client'),
+                            m('th'),
+                            m('th')
+                        ])),
+                        m('tbody', Object.keys(QuoteData.allquotes).length > 0 ? Object.keys(QuoteData.allquotes).map(function (o) {
+                            return self.deleting === o ? 
+                            m('tr.notification.is-danger.has-text-weight-bold', [
+                                m('td', 'Supprimer?'),
+                                m('td', o),
+                                m('td', m('a', {onclick: self.confirmdelete}, 'Supprimer')),
+                                m('td', m('a', {onclick: self.canceldelete}, 'Annuler'))
+                            ]) : 
+                            m('tr', [
+                                m('td', o),
+                                m('td', QuoteData.allquotes[o].customer),
+                                m('td', m('a.icon.has-text-success', {onclick: self.edit(o)}, [m('i.fa.fa-lg.fa-pencil'), m('span.table-button.is-hidden-mobile', 'Modifier')])),
+                                m('td', m('a.icon.has-text-danger', {onclick: self.delete(o)}, [m('i.fa.fa-lg.fa-times'), m('span.table-button.is-hidden-mobile', 'Supprimer')]))
+                            ])
+                        }) : m('tr', m('td', {colspan: 4}, 'Aucune soumission en cours.')))
+                    ])
                 ])
             ])
         ]),
@@ -629,7 +673,7 @@ NewQuote.oninit = function (vnode) {
                 quoteview.items.rows.push(['', '', '', 'TPS', String(tps.toFixed(2)) + ' $']);
                 quoteview.items.rows.push(['', '', '', 'TVQ', String(tvq.toFixed(2)) + ' $']);
                 quoteview.items.rows.push(['', '', 'Ceci n\'est pas une facture', 'Total', String((subtotal + tps + tvq).toFixed(2)) + ' $']);
-                window.open('pdfview.html#' + createPDF(quoteview));
+                location.href = 'pdfview.html#' + createPDF(quoteview);
             } else {
                 self.viewerror = 'Votre devis doit contenir un minimum de 1 et un maximum de 18 items!'
             }
@@ -655,11 +699,7 @@ NewQuote.view = function () {
                             m('div.field', [
                                 m('label.label.is-small', 'Numéro du devis'),
                                 m('div.control', m('p.is-small', self.quote.id))
-                            ]),
-                            m('div.field', [
-                                m('label.label.is-small', 'Statut du devis'),
-                                m('div.control', self.quote.status == QuoteStatus.NEW ? m('p.is-small', 'NOUVEAU') : '')
-                            ]),
+                            ])
                         ])
                     ])
                 ])
@@ -1009,31 +1049,13 @@ NewQuote.view = function () {
                 m('.container.notification', [
                     self.viewerror ? m('.notification.is-danger', self.viewerror) : '',
                     m('.field.is-grouped', [
-                        m('.control', m('button.button.is-primary', {onclick: self.viewquote}, 'Visualiser la soumission')),
-                        m('.control', m('a.button[href="/"]', {oncreate: m.route.link}, 'Sauvegarder et Fermer'))
+                        m('.control', m('button.button.is-primary', {onclick: self.viewquote}, 'Visualiser')),
+                        m('.control', m('a.button[href="/"]', {oncreate: m.route.link}, 'Fermer'))
                     ])
                 ])
             ])
         ]),
         QuoteFooter('newquote', self.quoteid)
-    ];
-}
-
-var ImportQuote = {}
-
-ImportQuote.view = function () {
-    return [
-        QuoteHeader('importquote'),
-        m('div.contents', [
-            m('section.section', [
-                m('.container', [
-                    m('button.button.is-info', {onclick: function () {
-                        window.open('pdfview.html#' + createPDF());
-                    }}, 'Test PDF')
-                ])
-            ])
-        ]),
-        QuoteFooter('importquote')
     ];
 }
 
@@ -1238,7 +1260,6 @@ if (version && version < 10) {
         '/': ifSettings(QuoteList),
         '/new': ifSettings(NewQuote),
         '/edit/:key': ifSettings(NewQuote),
-        '/load': ifSettings(ImportQuote),
         '/settings': Settings
     });
 }

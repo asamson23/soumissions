@@ -5,11 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Visionnement de votre Soumission</title>
+    <style>
+        .btn {
+            position: absolute;   
+            border: 1px solid transparent;
+            border-radius: 3px;
+            color: #ffffff;
+            padding-left: .75em;
+            padding-right: .75em;
+            padding-top: calc(.375em - 1px);
+            padding-bottom: calc(.375em - 1px);
+            line-height: 1.5;
+            font-size: 1rem;
+            user-select: none;
+            cursor: pointer;
+            text-align: center;
+            white-space: nowrap;
+            text-decoration: none;
+            font-family: BlinkMacSystemFont,-apple-system,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Fira Sans','Droid Sans','Helvetica Neue',Helvetica,Arial,sans-serif;
+        }
+
+        #backbtn {
+            top: 7px;
+            left: 7px;
+            background-color: #209cee;
+        }
+
+        #backbtn:hover {
+            background-color: #1496ed;
+        }
+
+        #backbtn:active {
+            background-color: #118fe4;
+        }
+
+        #downloadbtn {
+            top: 7px;
+            right: 7px;
+            background-color: #00d1b2;
+        }
+
+        #downloadbtn:hover {
+            background-color: #00c4a7;
+        }
+
+        #downloadbtn:active {
+            background-color: #00b89c;
+        }
+    </style>
 </head>
 <body>
-    <iframe id="pdfdoc" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; margin: 0; border: none;"></iframe>
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 50px; background-color: #222222; color: #eeeeee;">
+        <a id="backbtn" class="btn" href="/">Retour</a>
+        <a id="downloadbtn" class="btn" download=download target="_blank">Télécharger</a>
+    </div>
+    <iframe id="pdfdoc" style="position: absolute; top: 50px; left: 0; width: 100vw; height: calc(100vh - 50px); margin: 0; border: none;"></iframe>
     <script>
-        document.getElementById('pdfdoc').src = document.location.hash.substr(1);
+        var data = document.location.hash.substr(1)
+        document.getElementById('pdfdoc').src = data;
+        document.getElementById('downloadbtn').href = data;
     </script>
 </body>
 </html>

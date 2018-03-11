@@ -1,4 +1,5 @@
 var jsPDF = window.jsPDF;
+var zFill = window.zFill;
 
 // MAX COMMENT LENGTH = 700
 // MIN-MAX NUMBER OF ITEMS = 18
@@ -109,14 +110,14 @@ var createPDF = function (data) {
     doc.textEx('Date du devis : ', pageWidth - margin - fieldWidth, y, {halign: 'right'});
     doc.line(pageWidth - margin - fieldWidth, y + fontSize, pageWidth - margin, y + fontSize);
     doc.setTextColor(0, 112, 192);
-    doc.textEx('30/11/2017', pageWidth - margin - fieldWidth / 2, y, {halign: 'center'});
+    doc.textEx(zFill(data.date.getDate()) + '/' + zFill((data.date.getMonth() + 1)) + '/' + data.date.getFullYear(), pageWidth - margin - fieldWidth / 2, y, {halign: 'center'});
     doc.setTextColor(0);
     y += fontSize * 1.5;
     doc.setFontStyle('bold')
     doc.textEx('Date d\'expiration : ', pageWidth - margin - fieldWidth, y, {halign: 'right'});
     doc.setFontStyle('normal');
     doc.line(pageWidth - margin - fieldWidth, y + fontSize, pageWidth - margin, y + fontSize);
-    doc.textEx('30/01/2018', pageWidth - margin - fieldWidth / 2, y, {halign: 'center'});
+    doc.textEx(zFill(data.expires.getDate()) + '/' + zFill((data.expires.getMonth() + 1)) + '/' + data.expires.getFullYear(), pageWidth - margin - fieldWidth / 2, y, {halign: 'center'});
     fontSize = 9;
     doc.setFontSize(fontSize);
     y += fontSize * 1.5;
