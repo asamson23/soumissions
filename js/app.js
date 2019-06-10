@@ -9,14 +9,14 @@ var zFill = window.zFill = function(s) {
 
 var serializeFieldSet = function(fieldSet) {
     var res = {};
-    Object.keys(fieldSet).forEach(function (o) {
+    Object.keys(fieldSet).forEach(function(o) {
         res[o] = fieldSet[o].value;
     });
     return res;
 }
 
 var deserializeFieldSet = function(data, fieldSet) {
-    Object.keys(data).forEach(function (o) {
+    Object.keys(data).forEach(function(o) {
         if (fieldSet[o]) {
             fieldSet[o].value = data[o];
             fieldSet[o].valid = null;
@@ -25,13 +25,13 @@ var deserializeFieldSet = function(data, fieldSet) {
 }
 
 var resetValidation = function(fieldSet) {
-    Object.keys(fieldSet).forEach(function (o) {
+    Object.keys(fieldSet).forEach(function(o) {
         fieldSet[o].valid = null;
     });
 }
 
-var validateFieldSet = function (fieldSet) {
-    return Object.keys(fieldSet).every(function (k) {
+var validateFieldSet = function(fieldSet) {
+    return Object.keys(fieldSet).every(function(k) {
         return fieldSet[k].validate();
     })
 }
@@ -39,21 +39,21 @@ var validateFieldSet = function (fieldSet) {
 var SettingsData = {
     tvq: 9.975,
     tps: 5.0,
-    storeno: '',
-    storeaddr: '',
-    storecity: '',
-    storepostcode: '',
-    storephone: '',
-    bdcoup: '53431',
+    storeno: '246',
+    storeaddr: '1400, Rue Cyrille-Duquet',
+    storecity: 'Québec',
+    storepostcode: 'G1X 3S2',
+    storephone: '(418) 527-4114',
+    //bdcoup: '',
     loaded: false,
-    loadSettings: function () {
+    loadSettings: function() {
         var settings = localStorage.getItem('settings');
         if (settings) {
             settings = JSON.parse(settings);
             this.tvq = settings.tvq;
             this.tps = settings.tps;
             this.storeno = settings.storeno;
-            this.bdcoup = settings.bdcoup;
+            //this.bdcoup = settings.bdcoup;
             this.storecity = settings.storecity;
             this.storeaddr = settings.storeaddr;
             this.storephone = settings.storephone;
@@ -63,12 +63,12 @@ var SettingsData = {
             return false;
         }
     },
-    saveSettings: function () {
+    saveSettings: function() {
         var settings = {
             tvq: this.tvq,
             tps: this.tps,
             storeno: this.storeno,
-            bdcoup: this.bdcoup,
+            //bdcoup: this.bdcoup,
             storecity: this.storecity,
             storeaddr: this.storeaddr,
             storephone: this.storephone,
@@ -84,7 +84,7 @@ SettingsData.loaded = SettingsData.loadSettings();
 var QuoteData = {
     allquotes: {},
     openquote: {},
-    loadQuotes: function () {
+    loadQuotes: function() {
         var quotes = localStorage.getItem('allquotes');
         if (quotes) {
             this.allquotes = JSON.parse(quotes);
@@ -94,17 +94,17 @@ var QuoteData = {
             return false;
         }
     },
-    deleteQuote: function (id) {
+    deleteQuote: function(id) {
         localStorage.removeItem(id);
         delete this.allquotes[id];
         this.saveQuotes();
     },
-    saveQuotes: function () {
+    saveQuotes: function() {
         var quotes = JSON.stringify(this.allquotes);
         localStorage.setItem('allquotes', quotes);
         return true;
     },
-    loadQuote: function (quoteID) {
+    loadQuote: function(quoteID) {
         var quote = localStorage.getItem(quoteID);
         if (quote) {
             this.openquote = JSON.parse(quote);
@@ -116,15 +116,15 @@ var QuoteData = {
             return false;
         }
     },
-    saveQuote: function () {
+    saveQuote: function() {
         if (!this.openquote.id) return false;
         var quote = JSON.stringify(this.openquote);
         localStorage.setItem(this.openquote.id, quote);
-        this.allquotes[this.openquote.id] = {customer: this.openquote.customer.company};
+        this.allquotes[this.openquote.id] = { customer: this.openquote.customer.company };
         this.saveQuotes();
         return true;
     },
-    nextQuoteId: function () {
+    nextQuoteId: function() {
         var store = SettingsData.storeno,
             date = new Date(),
             datestr = String(date.getFullYear()).slice(2, 4) + zFill(String(date.getMonth() + 1)) + zFill(String(date.getDate())),
@@ -136,7 +136,7 @@ var QuoteData = {
         }
         return id;
     },
-    newQuote: function () {
+    newQuote: function() {
         var date = new Date();
         var expdate = new Date(date.getFullYear(), date.getMonth() + 1, date.getDate());
         this.openquote = {
@@ -169,33 +169,33 @@ var QuoteData = {
         }
         return this.openquote;
     },
-    dateToStr: function (d) {
+    dateToStr: function(d) {
         return zFill(String(d.getDate())) + '/' + zFill(String(d.getMonth() + 1)) + '/' + String(d.getFullYear());
     },
-    strToDate: function (s) {
+    strToDate: function(s) {
         s = s.split('/');
         return new Date(Number(s[2]), Number(s[1]) - 1, Number(s[0]));
     }
 }
 QuoteData.loadQuotes();
 
-var QuoteHeader = function (activeTab, quoteid) {
+var QuoteHeader = function(activeTab, quoteid) {
     return m('header.hero.is-info.is-bold', [
         m('.hero-body', m('.container', [
-            m('h1.title.is-1-tablet', 'Soumissions par J-F Desrochers'),
+            m('h1.title.is-1-tablet', 'Soumissions Staples / Bureau en Gros'),
             m('h2.subtitle.is-3-tablet', 'Rédigez vos soumissions rapidement et facilement avec ce petit programme')
         ])),
         m('.hero-foot', m('nav.tabs.is-boxed.is-hidden-mobile', m('ul', [
-            m('li' + (activeTab == 'quotelist' ? '.is-active' : ''), m('a[href="/"]', {oncreate: m.route.link}, [
+            m('li' + (activeTab == 'quotelist' ? '.is-active' : ''), m('a[href="/"]', { oncreate: m.route.link }, [
                 m('span.icon.is-small', m('i.fa.fa-home')),
                 m('span', 'Mes soumissions')
             ])),
-            m('li' + (activeTab == 'newquote' ? '.is-active' : ''), m('a[href="/new"]', {oncreate: m.route.link}, [
+            m('li' + (activeTab == 'newquote' ? '.is-active' : ''), m('a[href="/new"]', { oncreate: m.route.link }, [
                 m('span.icon.is-small', m('i.fa.fa-pencil-square-o')),
                 (activeTab == 'newquote' && quoteid) ? m('span', 'Modifier la soumission ' + quoteid) :
                 m('span', 'Créer une nouvelle soumission')
             ])),
-            m('li' + (activeTab == 'settings' ? '.is-active' : ''), m('a[href="/settings"]', {oncreate: m.route.link}, [
+            m('li' + (activeTab == 'settings' ? '.is-active' : ''), m('a[href="/settings"]', { oncreate: m.route.link }, [
                 m('span.icon.is-small', m('i.fa.fa-cog')),
                 m('span', 'Réglages')
             ]))
@@ -203,19 +203,19 @@ var QuoteHeader = function (activeTab, quoteid) {
     ]);
 }
 
-var QuoteFooter = function (activeTab, quoteid) {
+var QuoteFooter = function(activeTab, quoteid) {
     return m('footer.footer', [
         m('.container', [
             m('nav.tabs.is-fullwidth.is-hidden-tablet', m('ul', [
-                m('li' + (activeTab == 'quotelist' ? '.is-active' : ''), m('a[href="/"]', {oncreate: m.route.link}, [
+                m('li' + (activeTab == 'quotelist' ? '.is-active' : ''), m('a[href="/"]', { oncreate: m.route.link }, [
                     m('span.icon.is-small', m('i.fa.fa-lg.fa-home')),
                     m('span', 'Liste')
                 ])),
-                m('li' + (activeTab == 'newquote' ? '.is-active' : ''), m('a[href="/new"]', {oncreate: m.route.link}, [
+                m('li' + (activeTab == 'newquote' ? '.is-active' : ''), m('a[href="/new"]', { oncreate: m.route.link }, [
                     m('span.icon.is-small', m('i.fa.fa-lg.fa-pencil-square-o')),
                     (activeTab == 'newquote' && quoteid) ? m('span', 'Modifier') : m('span', 'Nouvelle')
                 ])),
-                m('li' + (activeTab == 'settings' ? '.is-active' : ''), m('a[href="/settings"]', {oncreate: m.route.link}, [
+                m('li' + (activeTab == 'settings' ? '.is-active' : ''), m('a[href="/settings"]', { oncreate: m.route.link }, [
                     m('span.icon.is-small', m('i.fa.fa-lg.fa-cog')),
                     m('span', 'Réglages')
                 ]))
@@ -226,25 +226,25 @@ var QuoteFooter = function (activeTab, quoteid) {
 }
 
 var FieldGroup = {
-    view: function (vnode) {
+    view: function(vnode) {
         var params = vnode.attrs;
         return m('div.field', [
             m('label.label' + (params.small ? '.is-small' : ''), params.label),
             params.hasAddons ? m('div.field' + (params.hasAddons ? '.has-addons' : ''), vnode.children) :
             vnode.children,
             (params.isValid === true && params.successText) ? m('p.help.is-success', params.successText) :
-            (params.isValid === false && params.errorText) ? m('p.help.is-danger', params.errorText) : 
+            (params.isValid === false && params.errorText) ? m('p.help.is-danger', params.errorText) :
             (params.helpText) ? m('p.help', params.helpText) : ''
         ])
     }
 }
 
 var InputField = {
-    oninit: function (vnode) {
+    oninit: function(vnode) {
         var params = vnode.attrs;
         var self = this;
         self.validated = false;
-        self.validate = function () {
+        self.validate = function() {
             if (self.validated) return;
             var isValid = params.regEx.test(params.fieldSet[params.name].value);
             if (isValid) {
@@ -262,7 +262,7 @@ var InputField = {
             params.fieldSet[params.name].valid = isValid;
             return isValid;
         }
-        self.onChange = function (e) {
+        self.onChange = function(e) {
             params.fieldSet[params.name].value = e.target.value;
             self.validate();
             self.validated = true;
@@ -270,7 +270,7 @@ var InputField = {
                 params.onChange(e, params.fieldSet[params.name]);
             };
         }
-        self.onExit = function () {
+        self.onExit = function() {
             self.validate();
             self.validated = false;
         }
@@ -282,14 +282,14 @@ var InputField = {
             }
         }
     },
-    view: function (vnode) {
+    view: function(vnode) {
         var params = vnode.attrs;
         var self = this;
 
         var render = [
             m('div.control' + (params.icon ? '.has-icons-right' : '') + (params.fullwidth ? '.is-expanded' : ''), [
-                m('input.input'  + (params.small ? '.is-small' : '') + (params.fieldSet[params.name].valid === true ? '.is-success' : params.fieldSet[params.name].valid === false ? '.is-danger' : ''), {
-                    oncreate: function (vdom) {
+                m('input.input' + (params.small ? '.is-small' : '') + (params.fieldSet[params.name].valid === true ? '.is-success' : params.fieldSet[params.name].valid === false ? '.is-danger' : ''), {
+                    oncreate: function(vdom) {
                         if (params.autofocus) {
                             vdom.dom.focus();
                         }
@@ -303,7 +303,7 @@ var InputField = {
                     onblur: self.onExit,
                     disabled: params.disabled || false
                 }),
-                params.icon ? m('span.icon.is-small.is-right', m('i', {className: params.icon})) : ''
+                params.icon ? m('span.icon.is-small.is-right', m('i', { className: params.icon })) : ''
             ])
         ];
         if (params.manualGrouping === true) {
@@ -328,10 +328,10 @@ var InputField = {
 }
 
 var SelectField = {
-    oninit: function (vnode) {
+    oninit: function(vnode) {
         var params = vnode.attrs;
         var self = this;
-        self.validate = function () {
+        self.validate = function() {
             var isValid = true;
             if (typeof params.onValidate === 'function') {
                 isValid = params.onValidate(params.fieldSet[params.name].value);
@@ -339,13 +339,13 @@ var SelectField = {
             params.fieldSet[params.name].valid = isValid;
             return isValid;
         }
-        self.onChange = function (e) {
+        self.onChange = function(e) {
             params.fieldSet[params.name].value = e.target.value;
             if (typeof params.onChange === 'function') {
                 params.onChange(e);
             };
         }
-        self.onExit = function () {
+        self.onExit = function() {
             self.validate();
         }
         if (!params.fieldSet[params.name]) {
@@ -356,15 +356,15 @@ var SelectField = {
             }
         }
     },
-    view: function (vnode) {
+    view: function(vnode) {
         var params = vnode.attrs;
         var self = this;
 
         var render = [
             m('div.control' + (params.icon ? '.has-icons-right' : '') + (params.fullwidth ? '.is-expanded' : ''), [
-                m('div.select'  + (params.small ? '.is-small' : '') + (params.fullwidth ? '.is-fullwidth' : '') + (params.fieldSet[params.name].valid === true ? '.is-success' : params.fieldSet[params.name].valid === false ? '.is-danger' : ''), [
+                m('div.select' + (params.small ? '.is-small' : '') + (params.fullwidth ? '.is-fullwidth' : '') + (params.fieldSet[params.name].valid === true ? '.is-success' : params.fieldSet[params.name].valid === false ? '.is-danger' : ''), [
                     m('select', {
-                        oncreate: function (vdom) {
+                        oncreate: function(vdom) {
                             if (params.autofocus) {
                                 vdom.dom.focus();
                             }
@@ -374,11 +374,11 @@ var SelectField = {
                         onchange: self.onChange,
                         onblur: self.onExit,
                         disabled: params.disabled || false
-                    }, params.options.map(function (o) {
-                        return m('option', {value: o.value, selected: (params.fieldSet[params.name].value == o.value)}, o.label);
+                    }, params.options.map(function(o) {
+                        return m('option', { value: o.value, selected: (params.fieldSet[params.name].value == o.value) }, o.label);
                     }))
                 ]),
-                params.icon ? m('span.icon.is-small.is-right', m('i', {className: params.icon})) : ''
+                params.icon ? m('span.icon.is-small.is-right', m('i', { className: params.icon })) : ''
             ])
         ];
         if (params.manualGrouping === true) {
@@ -404,19 +404,19 @@ var SelectField = {
 
 var QuoteList = {}
 
-QuoteList.oninit = function () {
+QuoteList.oninit = function() {
     var self = this;
     self.deleting = '';
 
     self.edit = function(id) {
-        return function (e) {
+        return function(e) {
             e.preventDefault();
             m.route.set('/edit/' + id);
         }
     }
 
-    self.delete = function(id)  {
-        return function (e) {
+    self.delete = function(id) {
+        return function(e) {
             e.preventDefault();
             self.deleting = id;
         }
@@ -434,14 +434,14 @@ QuoteList.oninit = function () {
     }
 }
 
-QuoteList.view = function () {
+QuoteList.view = function() {
     var self = this;
     return [
         QuoteHeader('quotelist'),
         m('div.contents', [
             m('section.section', [
                 m('.container', [
-                    m('a.button.is-primary.is-medium.mb-20[href="/new"]', {oncreate: m.route.link}, 'Nouvelle Soumission'),
+                    m('a.button.is-primary.is-medium.mb-20[href="/new"]', { oncreate: m.route.link }, 'Nouvelle Soumission'),
                     m('h1.title.is-4', 'Soumissions en cours'),
                     m('table.table.is-narrow.is-fullwidth', [
                         m('thead', m('tr', [
@@ -450,21 +450,21 @@ QuoteList.view = function () {
                             m('th'),
                             m('th')
                         ])),
-                        m('tbody', Object.keys(QuoteData.allquotes).length > 0 ? Object.keys(QuoteData.allquotes).map(function (o) {
-                            return self.deleting === o ? 
-                            m('tr.notification.is-danger.has-text-weight-bold', [
-                                m('td', 'Supprimer?'),
-                                m('td', o),
-                                m('td', m('a', {onclick: self.confirmdelete}, 'Supprimer')),
-                                m('td', m('a', {onclick: self.canceldelete}, 'Annuler'))
-                            ]) : 
-                            m('tr', [
-                                m('td', o),
-                                m('td', QuoteData.allquotes[o].customer),
-                                m('td', m('a.icon.has-text-success', {onclick: self.edit(o)}, [m('i.fa.fa-lg.fa-pencil'), m('span.table-button.is-hidden-mobile', 'Modifier')])),
-                                m('td', m('a.icon.has-text-danger', {onclick: self.delete(o)}, [m('i.fa.fa-lg.fa-times'), m('span.table-button.is-hidden-mobile', 'Supprimer')]))
-                            ])
-                        }) : m('tr', m('td', {colspan: 4}, 'Aucune soumission en cours.')))
+                        m('tbody', Object.keys(QuoteData.allquotes).length > 0 ? Object.keys(QuoteData.allquotes).map(function(o) {
+                            return self.deleting === o ?
+                                m('tr.notification.is-danger.has-text-weight-bold', [
+                                    m('td', 'Supprimer?'),
+                                    m('td', o),
+                                    m('td', m('a', { onclick: self.confirmdelete }, 'Supprimer')),
+                                    m('td', m('a', { onclick: self.canceldelete }, 'Annuler'))
+                                ]) :
+                                m('tr', [
+                                    m('td', o),
+                                    m('td', QuoteData.allquotes[o].customer),
+                                    m('td', m('a.icon.has-text-success', { onclick: self.edit(o) }, [m('i.fa.fa-lg.fa-pencil'), m('span.table-button.is-hidden-mobile', 'Modifier')])),
+                                    m('td', m('a.icon.has-text-danger', { onclick: self.delete(o) }, [m('i.fa.fa-lg.fa-times'), m('span.table-button.is-hidden-mobile', 'Supprimer')]))
+                                ])
+                        }) : m('tr', m('td', { colspan: 4 }, 'Aucune soumission en cours.')))
                     ])
                 ])
             ])
@@ -475,7 +475,7 @@ QuoteList.view = function () {
 
 var NewQuote = {}
 
-NewQuote.oninit = function (vnode) {
+NewQuote.oninit = function(vnode) {
     var self = this;
     self.fieldSet = {};
     self.quoteFields = {};
@@ -494,13 +494,13 @@ NewQuote.oninit = function (vnode) {
     self.editIndex = -1;
     self.viewerror = '';
 
-    self.loadSku = function (e, field) {
+    self.loadSku = function(e, field) {
         if (field.value !== '') {
-            resetValidation(self.quoteFields);
+            //resetValidation(self.quoteFields);
             self.isLoading = true;
             self.notFound = false;
             var postcode = SettingsData.storepostcode.replace(' ', '');
-            m.request('https://hook.io/jfdesrochers/splslookup/' + field.value + '/' + postcode).then(function (value) {
+            /*m.request('https://hook.io/jfdesrochers/splslookup/' + field.value + '/' + postcode).then(function(value) {
                 self.quoteFields['desc'].value = value.description;
                 self.quoteFields['price'].value = value.listPrice;
                 self.quoteFields['rebatevalue'].value = value.savings || 0;
@@ -510,10 +510,10 @@ NewQuote.oninit = function (vnode) {
                 if (adb) {
                     adb.focus();
                 };
-            }).catch(function (err) {
+            }).catch(function(err) {
                 self.isLoading = false;
                 self.notFound = true;
-                setTimeout(function () {
+                setTimeout(function() {
                     self.notFound = false;
                 }, 2000);
                 var dsc = document.getElementById('desc');
@@ -522,11 +522,11 @@ NewQuote.oninit = function (vnode) {
                     dsc.focus();
                 };
                 console.error(err);
-            })
+            })*/
         }
     }
 
-    self.lookupAssociate = function (e, field) {
+    self.lookupAssociate = function(e, field) {
         if (field.value !== '') {
             var assname = localStorage.getItem(field.value);
             if (assname) {
@@ -535,10 +535,10 @@ NewQuote.oninit = function (vnode) {
                 qd && qd.focus();
             }
         }
-        self.saveFields({saveAssociate: true})();
+        self.saveFields({ saveAssociate: true })();
     }
 
-    self.lookupCustomer = function (e, field) {
+    self.lookupCustomer = function(e, field) {
         if (field.value !== '') {
             var custdata = localStorage.getItem(field.value.replace(/\D/g, ''));
             if (custdata) {
@@ -550,11 +550,11 @@ NewQuote.oninit = function (vnode) {
                 qt && qt.focus();
             }
         }
-        self.saveFields({saveCustomer: true})();
+        self.saveFields({ saveCustomer: true })();
     }
 
-    self.setEditItem = function (idx) {
-        return function (e) {
+    self.setEditItem = function(idx) {
+        return function(e) {
             e.preventDefault();
             self.editIndex = idx;
             deserializeFieldSet(self.quoteItems[idx], self.quoteFields);
@@ -565,7 +565,7 @@ NewQuote.oninit = function (vnode) {
         }
     }
 
-    self.addQuoteItem = function (e) {
+    self.addQuoteItem = function(e) {
         e.preventDefault();
         if (validateFieldSet(self.quoteFields)) {
             if (self.editIndex > -1) {
@@ -579,7 +579,7 @@ NewQuote.oninit = function (vnode) {
         }
     }
 
-    self.deleteItem = function (e) {
+    self.deleteItem = function(e) {
         if (self.editIndex > -1) {
             self.quoteItems.splice(self.editIndex, 1);
             self.quotelen -= 1;
@@ -588,9 +588,9 @@ NewQuote.oninit = function (vnode) {
         }
     }
 
-    self.resetFields = function (e) {
+    self.resetFields = function(e) {
         e.preventDefault();
-        Object.keys(self.quoteFields).forEach(function (o) {
+        Object.keys(self.quoteFields).forEach(function(o) {
             self.quoteFields[o].value = '';
             self.quoteFields[o].valid = null;
         });
@@ -603,7 +603,7 @@ NewQuote.oninit = function (vnode) {
         }
     }
 
-    self.saveFields = function (options) {
+    self.saveFields = function(options) {
         options = options || {};
         return function() {
             var f = serializeFieldSet(self.fieldSet);
@@ -646,7 +646,7 @@ NewQuote.oninit = function (vnode) {
         }
     }
 
-    self.viewquote = function () {
+    self.viewquote = function() {
         var valid = validateFieldSet(self.fieldSet);
         self.viewerror = '';
         if (valid) {
@@ -655,17 +655,17 @@ NewQuote.oninit = function (vnode) {
                 quoteview.items = {};
                 quoteview.items.header = ['Qté', 'No d\'UGS', 'Description', 'Prix Unitaire', 'Prix Total'];
                 var subtotal = 0;
-                quoteview.items.rows = self.quoteItems.map(function (o) {
+                quoteview.items.rows = self.quoteItems.map(function(o) {
                     var price = (o.rebatetype === '$' ?
-                    (parseFloat(o.price) - parseFloat(o.rebatevalue)) :
-                    (parseFloat(o.price) - (parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100))));
+                        (parseFloat(o.price) - parseFloat(o.rebatevalue)) :
+                        (parseFloat(o.price) - (parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100))));
                     var total = (price * parseInt(o.qty));
                     subtotal += total;
                     return [o.qty, o.sku, o.desc, String(price.toFixed(2)) + ' $', String(total.toFixed(2)) + ' $'];
                 });
                 var rowtotal = 18 - self.quotelen;
-                for (var i=0; i<rowtotal; i++) {
-                    quoteview.items.rows.push(['','','','','']);
+                for (var i = 0; i < rowtotal; i++) {
+                    quoteview.items.rows.push(['', '', '', '', '']);
                 };
                 var tps = (subtotal * SettingsData.tps / 100);
                 var tvq = (subtotal * SettingsData.tvq / 100);
@@ -681,12 +681,12 @@ NewQuote.oninit = function (vnode) {
             self.viewerror = 'Certains de vos champs contiennent des valeurs invalides! Assurez-vous de bien remplir tous les champs avant de continuer!'
         }
         if (self.viewerror !== '') {
-            window.scrollTo(0,document.body.scrollHeight);
+            window.scrollTo(0, document.body.scrollHeight);
         }
     }
 }
 
-NewQuote.view = function () {
+NewQuote.view = function() {
     var self = this;
     return [
         QuoteHeader('newquote', self.quoteid),
@@ -703,7 +703,7 @@ NewQuote.view = function () {
                                 m('label.label.is-small', 'Numéro du devis'),
                                 m('div.control', m('p.is-small', self.quote.id))
                             ]),
-                            m('div.field', m('.control', m('button.button.is-primary.is-outlined', {onclick: self.viewquote}, 'Visualiser la soumission')))
+                            m('div.field', m('.control', m('button.button.is-primary.is-outlined', { onclick: self.viewquote }, 'Visualiser la soumission')))
                         ])
                     ])
                 ])
@@ -734,7 +734,7 @@ NewQuote.view = function () {
                                 filter: titleCase.convert,
                                 helpText: 'Entrez votre nom complet (prénom et nom)',
                                 errorText: 'Entrez un nom valide.',
-                                onChange: self.saveFields({saveAssociate: true})
+                                onChange: self.saveFields({ saveAssociate: true })
                             })
                         ]),
                         m('.column', [
@@ -744,31 +744,32 @@ NewQuote.view = function () {
                                 fieldSet: self.fieldSet,
                                 defaultValue: QuoteData.dateToStr(self.quote.date),
                                 regEx: /^(0[1-9]|[12][0-9]|3[01])[- /.]?(0[1-9]|1[0-2])[- /.]?((?:19|20)\d\d)$/,
-                                filter: function (s, rEx) {
+                                filter: function(s, rEx) {
                                     self.quote.date = QuoteData.strToDate(s.replace(rEx, '$1/$2/$3'));
                                     return QuoteData.dateToStr(self.quote.date);
                                 },
                                 helpText: '(jj/mm/aaaa)',
                                 errorText: 'Entrez une date valide (jj/mm/aaaa).',
                                 onChange: self.saveFields()
-                            }),
-                            m(InputField, {
-                                name: 'quoteexpires',
-                                label: 'Date d\'expiration',
-                                fieldSet: self.fieldSet,
-                                defaultValue: QuoteData.dateToStr(self.quote.expires),
-                                regEx: /^(0[1-9]|[12][0-9]|3[01])[- /.]?(0[1-9]|1[0-2])[- /.]?((?:19|20)\d\d)$/,
-                                filter: function (s, rEx) {
-                                    self.quote.expires = QuoteData.strToDate(s.replace(rEx, '$1/$2/$3'));
-                                    if (self.quote.expires < self.quote.date) {
-                                        return false;
-                                    }
-                                    return QuoteData.dateToStr(self.quote.expires);
-                                },
-                                helpText: '(jj/mm/aaaa)',
-                                errorText: 'Entrez une date valide (jj/mm/aaaa). La date doit être supérieure à la date de soumission.',
-                                onChange: self.saveFields()
                             })
+                            /*,
+                                                        m(InputField, {
+                                                            name: 'quoteexpires',
+                                                            label: 'Date d\'expiration',
+                                                            fieldSet: self.fieldSet,
+                                                            defaultValue: QuoteData.dateToStr(self.quote.expires),
+                                                            regEx: /^(0[1-9]|[12][0-9]|3[01])[- /.]?(0[1-9]|1[0-2])[- /.]?((?:19|20)\d\d)$/,
+                                                            filter: function(s, rEx) {
+                                                                self.quote.expires = QuoteData.strToDate(s.replace(rEx, '$1/$2/$3'));
+                                                                if (self.quote.expires < self.quote.date) {
+                                                                    return false;
+                                                                }
+                                                                return QuoteData.dateToStr(self.quote.expires);
+                                                            },
+                                                            helpText: '(jj/mm/aaaa)',
+                                                            errorText: 'Entrez une date valide (jj/mm/aaaa). La date doit être supérieure à la date de soumission.',
+                                                            onChange: self.saveFields()
+                                                        })*/
                         ])
                     ])
                 ])
@@ -802,7 +803,7 @@ NewQuote.view = function () {
                                         regEx: /^([A-Z|a-z|0-9](\.|_){0,1})+[A-Z|a-z|0-9]\@([A-Z|a-z|0-9])+((\.){0,1}[A-Z|a-z|0-9]){2}\.[a-z]{2,3}$/,
                                         helpText: 'Entrez l\'adresse courriel de votre client.',
                                         errorText: 'Entrez une adresse courriel valide. (ex.: nom@entreprise.com)',
-                                        onChange: self.saveFields({saveCustomer: true})
+                                        onChange: self.saveFields({ saveCustomer: true })
                                     })
                                 ]),
                             ]),
@@ -815,15 +816,15 @@ NewQuote.view = function () {
                                 filter: titleCase.convert,
                                 helpText: 'Entrez le nom complet (prénom et nom)',
                                 errorText: 'Entrez un nom valide.',
-                                onChange: self.saveFields({saveCustomer: true})
+                                onChange: self.saveFields({ saveCustomer: true })
                             }),
                             m(InputField, {
                                 name: 'custbusiness',
                                 label: 'Nom de l\'entreprise',
                                 fieldSet: self.fieldSet,
                                 defaultValue: self.quote.customer.company,
-                                regEx: /^.+$/,
-                                filter: function (s) {
+                                //regEx: /^.+$/,
+                                filter: function(s) {
                                     if (/[A-Z]+/.test(s)) {
                                         return s
                                     } else {
@@ -832,7 +833,7 @@ NewQuote.view = function () {
                                 },
                                 helpText: 'Entrez le nom de l\'entreprise.',
                                 errorText: 'Entrez un nom valide.',
-                                onChange: self.saveFields({saveCustomer: true})
+                                onChange: self.saveFields({ saveCustomer: true })
                             })
                         ]),
                         m('.column', [
@@ -845,7 +846,7 @@ NewQuote.view = function () {
                                 filter: titleCase.convert,
                                 helpText: 'Entrez l\'adresse de votre client.',
                                 errorText: 'Entrez une adresse valide.',
-                                onChange: self.saveFields({saveCustomer: true})
+                                onChange: self.saveFields({ saveCustomer: true })
                             }),
                             m('.columns', [
                                 m('.column', [
@@ -858,30 +859,30 @@ NewQuote.view = function () {
                                         filter: titleCase.convert,
                                         helpText: 'Entrez la ville de votre client.',
                                         errorText: 'Entrez une ville valide.',
-                                        onChange: self.saveFields({saveCustomer: true})
+                                        onChange: self.saveFields({ saveCustomer: true })
                                     })
                                 ]),
                                 m('.column', [
                                     m(SelectField, {
                                         name: 'custprovince',
                                         label: 'Province du client',
-                                        fieldSet: self.fieldSet, 
+                                        fieldSet: self.fieldSet,
                                         defaultValue: self.quote.customer.province || 'QC',
                                         helpText: 'Choisissez la province de votre client.',
                                         fullwidth: true,
                                         options: [
-                                            {value: 'QC', label: 'Québec'},
-                                            {value: 'ON', label: 'Ontario'},
-                                            {value: 'NB', label: 'Nouveau-Brunswick'},
-                                            {value: 'NS', label: 'Nouvelle-Écosse'},
-                                            {value: 'NL', label: 'Terre-Neuve et Labrador'},
-                                            {value: 'PEI', label: 'Ile du Prince-Édouard'},
-                                            {value: 'MB', label: 'Manitoba'},
-                                            {value: 'SK', label: 'Saskatchewan'},
-                                            {value: 'AB', label: 'Alberta'},
-                                            {value: 'BC', label: 'Colombie-Britannique'}
+                                            { value: 'QC', label: 'Québec' },
+                                            { value: 'ON', label: 'Ontario' },
+                                            { value: 'NB', label: 'Nouveau-Brunswick' },
+                                            { value: 'NS', label: 'Nouvelle-Écosse' },
+                                            { value: 'NL', label: 'Terre-Neuve et Labrador' },
+                                            { value: 'PEI', label: 'Ile du Prince-Édouard' },
+                                            { value: 'MB', label: 'Manitoba' },
+                                            { value: 'SK', label: 'Saskatchewan' },
+                                            { value: 'AB', label: 'Alberta' },
+                                            { value: 'BC', label: 'Colombie-Britannique' }
                                         ],
-                                        onChange: self.saveFields({saveCustomer: true})
+                                        onChange: self.saveFields({ saveCustomer: true })
                                     })
                                 ])
                             ]),
@@ -891,12 +892,12 @@ NewQuote.view = function () {
                                 fieldSet: self.fieldSet,
                                 defaultValue: self.quote.customer.postcode,
                                 regEx: /^([ABCEGHJ-NPRSTVXY]{1}\d{1}[A-Z]{1})\s?(\d{1}[A-Z]{1}\d{1})$/i,
-                                filter: function (s, rEx) {
+                                filter: function(s, rEx) {
                                     return s.replace(rEx, '$1 $2').toUpperCase();
                                 },
                                 helpText: 'Entrez le code postal de votre client (ex.: H0H 0H0).',
                                 errorText: 'Entrez un code postal valide (ex.: H0H 0H0).',
-                                onChange: self.saveFields({saveCustomer: true})
+                                onChange: self.saveFields({ saveCustomer: true })
                             }),
                         ])
                     ])
@@ -909,15 +910,15 @@ NewQuote.view = function () {
                     m('h2.subtitle.is-6.has-text-danger', 'Vous ne pouvez pas ajouter d\'items à votre soumission.'),
                     m('table#quoteitems.table.is-fullwidth.is-narrow', [
                         m('thead', m('tr', [
-                            m('th', m('abbr', {title: 'Quantité'}, 'Qté')),
+                            m('th', m('abbr', { title: 'Quantité' }, 'Qté')),
                             m('th', 'UGS'),
                             m('th', 'Description'),
-                            m('th', m('abbr', {title: 'Prix unitaire'}, 'Prix')),
+                            m('th', m('abbr', { title: 'Prix unitaire' }, 'Prix')),
                             m('th', 'Rabais'),
                             m('th', 'Total'),
                             m('th', '')
                         ])),
-                        m('tbody', self.quoteItems.length > 0 ? self.quoteItems.map(function (o, i) {
+                        m('tbody', self.quoteItems.length > 0 ? self.quoteItems.map(function(o, i) {
                             return m('tr' + (self.editIndex === i ? '.is-selected' : ''), [
                                 m('td', o.qty),
                                 m('td', o.sku),
@@ -925,11 +926,11 @@ NewQuote.view = function () {
                                 m('td', m.trust(o.price + '&nbsp;$')),
                                 m('td', m.trust((o.rebatetype === '$' ? o.rebatevalue : String((parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100)).toFixed(2))) + '&nbsp;$')),
                                 m('td', m.trust((o.rebatetype === '$' ?
-                                String(((parseFloat(o.price) - parseFloat(o.rebatevalue)) * parseInt(o.qty)).toFixed(2)) :
-                                String(((parseFloat(o.price) - (parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100))) * parseInt(o.qty)).toFixed(2))) + '&nbsp;$')),
-                                m('td', m('a.icon', {onclick: self.setEditItem(i)}, m('i.fa.fa-lg.fa-pencil')))
+                                    String(((parseFloat(o.price) - parseFloat(o.rebatevalue)) * parseInt(o.qty)).toFixed(2)) :
+                                    String(((parseFloat(o.price) - (parseFloat(o.price) * (parseFloat(o.rebatevalue) / 100))) * parseInt(o.qty)).toFixed(2))) + '&nbsp;$')),
+                                m('td', m('a.icon', { onclick: self.setEditItem(i) }, m('i.fa.fa-lg.fa-pencil')))
                             ])
-                        }) : m('tr', m('td', {colspan: 8}, 'Aucun item à afficher.')))
+                        }) : m('tr', m('td', { colspan: 8 }, 'Aucun item à afficher.')))
                     ]),
                     m('.card', [
                         m('header.card-header', m('p.card-header-title', self.editIndex > -1 ? 'Modifier un item' : 'Ajouter un item')),
@@ -971,7 +972,7 @@ NewQuote.view = function () {
                                     fieldSet: self.quoteFields,
                                     defaultValue: '',
                                     regEx: /^(\d+)(?:[\,|\.](\d{1,2}))?$/,
-                                    filter: function (v, r) {
+                                    filter: function(v, r) {
                                         var m = r.exec(v);
                                         if (!m[1]) return '';
                                         if (m[2]) {
@@ -993,11 +994,11 @@ NewQuote.view = function () {
                                             m(SelectField, {
                                                 manualGrouping: true,
                                                 name: 'rebatetype',
-                                                fieldSet: self.quoteFields, 
+                                                fieldSet: self.quoteFields,
                                                 defaultValue: '$',
                                                 options: [
-                                                    {value: '$', label: '$'},
-                                                    {value: '%', label: '%'}
+                                                    { value: '$', label: '$' },
+                                                    { value: '%', label: '%' }
                                                 ],
                                                 disabled: self.isLoading
                                             })
@@ -1008,7 +1009,7 @@ NewQuote.view = function () {
                                         defaultValue: '',
                                         fullwidth: true,
                                         regEx: /^(\d+)?(?:[\,|\.](\d{1,2}))?$/,
-                                        filter: function (v, r) {
+                                        filter: function(v, r) {
                                             var m = r.exec(v);
                                             if (!m[1]) return '0.00';
                                             if (m[2]) {
@@ -1028,9 +1029,9 @@ NewQuote.view = function () {
                             ])
                         ]),
                         m('footer.card-footer', [
-                            (self.quotelen <= 18 || self.editIndex > -1) ? m('button#addbtn.button.is-white.card-footer-item', {onclick: self.addQuoteItem}, self.editIndex > -1 ? 'Sauvegarder' : 'Ajouter') : '',
-                            self.editIndex > -1 ? m('button#resetbtn.button.is-danger.card-footer-item', {onclick: self.deleteItem}, 'Supprimer') : '',
-                            m('button#resetbtn.button.is-white.card-footer-item', {onclick: self.resetFields}, self.editIndex > -1 ? 'Annuler' : 'Réinitialiser')
+                            (self.quotelen <= 18 || self.editIndex > -1) ? m('button#addbtn.button.is-white.card-footer-item', { onclick: self.addQuoteItem }, self.editIndex > -1 ? 'Sauvegarder' : 'Ajouter') : '',
+                            self.editIndex > -1 ? m('button#resetbtn.button.is-danger.card-footer-item', { onclick: self.deleteItem }, 'Supprimer') : '',
+                            m('button#resetbtn.button.is-white.card-footer-item', { onclick: self.resetFields }, self.editIndex > -1 ? 'Annuler' : 'Réinitialiser')
                         ])
                     ])
                 ])
@@ -1053,8 +1054,8 @@ NewQuote.view = function () {
                 m('.container.notification', [
                     self.viewerror ? m('.notification.is-danger', self.viewerror) : '',
                     m('.field.is-grouped', [
-                        m('.control', m('button.button.is-primary', {onclick: self.viewquote}, 'Visualiser')),
-                        m('.control', m('a.button[href="/"]', {oncreate: m.route.link}, 'Fermer'))
+                        m('.control', m('button.button.is-primary', { onclick: self.viewquote }, 'Visualiser')),
+                        m('.control', m('a.button[href="/"]', { oncreate: m.route.link }, 'Fermer'))
                     ])
                 ])
             ])
@@ -1065,13 +1066,13 @@ NewQuote.view = function () {
 
 var Settings = {}
 
-Settings.oninit = function () {
+Settings.oninit = function() {
     var self = this;
     self.fieldSet = {};
-    self.save = function () {
+    self.save = function() {
         var valid = validateFieldSet(self.fieldSet);
         if (valid) {
-            SettingsData.bdcoup = self.fieldSet['bdcoup'].value;
+            //SettingsData.bdcoup = self.fieldSet['bdcoup'].value;
             SettingsData.tvq = parseFloat(self.fieldSet['tvq'].value);
             SettingsData.tps = parseFloat(self.fieldSet['tps'].value);
             SettingsData.storeno = self.fieldSet['storeno'].value;
@@ -1086,7 +1087,7 @@ Settings.oninit = function () {
     }
 }
 
-Settings.view = function () {
+Settings.view = function() {
     var self = this;
     return [
         QuoteHeader('settings'),
@@ -1130,7 +1131,7 @@ Settings.view = function () {
                                 fieldSet: self.fieldSet,
                                 defaultValue: SettingsData.storepostcode,
                                 regEx: /^([ABCEGHJ-NPRSTVXY]{1}\d{1}[A-Z]{1})\s?(\d{1}[A-Z]{1}\d{1})$/i,
-                                filter: function (s, rEx) {
+                                filter: function(s, rEx) {
                                     return s.replace(rEx, '$1 $2').toUpperCase();
                                 },
                                 errorText: 'Entrez un code postal valide (ex.: H0H 0H0).'
@@ -1162,19 +1163,19 @@ Settings.view = function () {
                                 regEx: /^\d+(\.\d+)?$/,
                                 errorText: 'Entrez un pourcentage de taxe valide (ex.: 5.0).'
                             }),
-                            m(InputField, {
+                            /*m(InputField, {
                                 name: 'bdcoup',
                                 label: 'Code de bon pour le développement des affaires',
                                 fieldSet: self.fieldSet,
                                 defaultValue: SettingsData.bdcoup,
                                 regEx: /^\d{5}$/,
                                 errorText: 'Entrez un code de bon valide (ex.: 12345).'
-                            })
+                            })*/
                         ])
                     ]),
                     m('.field.is-grouped.notification', [
-                        m('.control', m('button.button.is-primary', {onclick: self.save}, 'Sauvegarder')),
-                        m('.control', m('a.button[href="/"]', {oncreate: m.route.link}, 'Annuler'))
+                        m('.control', m('button.button.is-primary', { onclick: self.save }, 'Sauvegarder')),
+                        m('.control', m('a.button[href="/"]', { oncreate: m.route.link }, 'Annuler'))
                     ])
                 ])
             ])
@@ -1186,20 +1187,20 @@ Settings.view = function () {
 function detectIE() {
     // From https://codepen.io/gapcode/pen/vEJNZN
     var ua = window.navigator.userAgent;
-  
+
     var msie = ua.indexOf('MSIE ');
     if (msie > 0) {
         // IE 10 or older => return version number
         return parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
     }
-  
+
     var trident = ua.indexOf('Trident/');
     if (trident > 0) {
         // IE 11 => return version number
         var rv = ua.indexOf('rv:');
         return parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
     }
-  
+
     var edge = ua.indexOf('Edge/');
     if (edge > 0) {
         // Edge (IE 12+) => return version number
@@ -1211,7 +1212,7 @@ var version = detectIE();
 
 var IEWarning = {}
 
-IEWarning.view = function () {
+IEWarning.view = function() {
     return m('section.hero.is-warning.is-bold', [
         m('.hero-body', [
             m('.container', [
@@ -1224,19 +1225,19 @@ IEWarning.view = function () {
                 m('.tile.is-ancestor', [
                     m('.tile.is-parent', m('a.tile.is-child.box.has-text-centered[href="https://www.google.fr/intl/fr/chrome/browser/desktop/"]', [
                         m('p.title', 'Google Chrome'),
-                        m('img.browser-logo', {src: 'img/ChromeLogo.png'})
+                        m('img.browser-logo', { src: 'img/ChromeLogo.png' })
                     ])),
                     m('.tile.is-parent', m('a.tile.is-child.box.has-text-centered[href="https://www.mozilla.org/fr/firefox/new/"]', [
                         m('p.title', 'Mozilla Firefox'),
-                        m('img.browser-logo', {src: 'img/FirefoxLogo.png'})
+                        m('img.browser-logo', { src: 'img/FirefoxLogo.png' })
                     ])),
                     m('.tile.is-parent', m('a.tile.is-child.box.has-text-centered[href="http://www.opera.com/fr"]', [
                         m('p.title', 'Opera'),
-                        m('img.browser-logo', {src: 'img/OperaLogo.png'})
+                        m('img.browser-logo', { src: 'img/OperaLogo.png' })
                     ])),
                     m('.tile.is-parent', m('a.tile.is-child.box.has-text-centered[href="https://www.microsoft.com/fr-ca/windows/microsoft-edge"]', [
                         m('p.title', 'Microsoft Edge'),
-                        m('img.browser-logo', {src: 'img/EdgeLogo.png'})
+                        m('img.browser-logo', { src: 'img/EdgeLogo.png' })
                     ]))
                 ])
             ]))
@@ -1245,13 +1246,13 @@ IEWarning.view = function () {
 }
 
 if (version && version < 10) {
-    document.getElementById('approot').innerHTML = '<p>Vous utilisez présentement Internet Explorer ' + version + '. Ce navigateur n\'est plus supporté par Microsoft et ne fonctionnera pas sur ce site. Veuillez télécharger un navigateur moderne, tel que <a href="https://www.google.fr/intl/fr/chrome/browser/desktop/">Google Chrome</a> ou <a href="https://www.mozilla.org/fr/firefox/new/">Mozilla Firefox</a>.</p>';
+    document.getElementById('approot').innerHTML = '<p>Vous utilisez présentement Internet Explorer ' + version + '. Ce navigateur n\'est plus supporté par Microsoft et ne fonctionnera pas sur ce site. Veuillez télécharger un navigateur moderne, tel que <a href="https://www.google.fr/intl/fr/chrome/browser/desktop/">Google Chrome</a> ou <a href="https://www.mozilla.org/fr/firefox/new/">Mozilla Firefox</a>. Sinon, copiez l\'URL du site et copiez là dans une appli comme EasyTech en faisant Ctrl + T pour accéder à la version complète de Google Chrome</p>';
 } else if (version && version < 12) {
     m.mount(document.getElementById('approot'), IEWarning);
 } else {
-    var ifSettings = function (comp) {
+    var ifSettings = function(comp) {
         return {
-            onmatch: function () {
+            onmatch: function() {
                 if (SettingsData.loaded) {
                     return comp;
                 } else {
