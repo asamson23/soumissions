@@ -497,7 +497,7 @@ NewQuote.oninit = function(vnode) {
     self.loadSku = function(e, field) {
         if (field.value !== '') {
             //resetValidation(self.quoteFields);
-            self.isLoading = true;
+            //self.isLoading = true;
             self.notFound = false;
             var postcode = SettingsData.storepostcode.replace(' ', '');
             /*m.request('https://hook.io/jfdesrochers/splslookup/' + field.value + '/' + postcode).then(function(value) {
@@ -951,10 +951,10 @@ NewQuote.view = function() {
                                     fieldSet: self.quoteFields,
                                     defaultValue: '',
                                     regEx: /^.+$/,
-                                    onChange: self.loadSku,
+                                    //onChange: self.loadSku,
                                     errorText: 'Entrez une UGS valide.',
                                     helpText: self.notFound ? 'Item non trouvé!' : self.isLoading ? 'Chargement de l\'item...' : '',
-                                    icon: self.isLoading ? 'fa fa-cog fa-spin' : 'fa fa-search',
+                                    //icon: self.isLoading ? 'fa fa-cog fa-spin' : 'fa fa-search',
                                     disabled: self.isLoading
                                 })),
                                 m('.column.is-half', m(InputField, {
