@@ -720,8 +720,8 @@ NewQuote.view = function() {
                                 fieldSet: self.fieldSet,
                                 defaultValue: self.quote.associate.number,
                                 regEx: /^\d{7}$/,
-                                helpText: 'Entrez votre numéro d\'associé. (ex.: 1234567 ou 0004567)',
-                                errorText: 'Entrez un numéro d\'associé valide. (ex.: 1234567 ou 0004567)',
+                                helpText: 'Entrez votre numéro d\'associé. (ex.: 1234567 ou 0001234)',
+                                errorText: 'Entrez un numéro d\'associé valide. (ex.: 1234567 ou 0001234)',
                                 autofocus: true,
                                 onChange: self.lookupAssociate
                             }),
